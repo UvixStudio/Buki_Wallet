@@ -1,0 +1,97 @@
+# Changelog - Buki Wallet
+
+All notable changes to this project will be documented in this file.
+
+---
+
+## [Phase 1 - POC] - 2025-12-31 (בפיתוח)
+
+### Added ✨
+- UI מלא עם שני סקשנים לילדים (יונתן, אמיר)
+- כפתור מצב הורה/צפייה בכותרת העליונה
+- מודל הוספת רשומה מעוצב (כותרת בצבע הילד + טקסט לבן)
+- כפתורי הרחבה/צמצום (⛶) לכל ילד
+- גלילה פנימית ברשומות - כל ילד יכול לגלול את כל 20 הרשומות שלו
+- תמיכה מלאה ב-RTL (Right-to-Left)
+- תרגום מלא לעברית - כל הטקסטים, תאריכים, ותיאורי רשומות
+- 20 רשומות מזויפות לכל ילד (נתונים רנדומליים)
+
+### Changed 🔄
+- כותרת מודל: עברה לצבע של הילד עם טקסט לבן (Navy ליונתן, Orange לאמיר)
+- סדר כפתורים במודל: שמירה (ימין), ביטול (שמאל) - RTL
+- סדר רדיו באטונים: הכנסה (ימין), הוצאה (שמאל) - RTL
+- סדר עמודות ברשומות: סכום+תיאור (ימין), תאריך (שמאל) - RTL
+- תצוגה ממורכזת mobile-first (max-width: 448px)
+- רשומות: הוחלף מ-5 רשומות קבועות לכל 20 רשומות עם גלילה
+- כפתור מצב הורה: הועבר מה-footer לכותרת העליונה
+
+### Design Decisions 🎨
+- **כל ילד מקבל צבע ייחודי**: Navy Blue (#1E3A8A) ליונתן, Orange (#EA580C) לאמיר
+- **כותרות על רקע צבעוני**: טקסט לבן על רקע צבע הילד לזיהוי מיידי
+- **RTL מלא**: יישור ימני, היפוך סדר אלמנטים, תמיכה בעברית
+- **גלילה פנימית**: מאפשר מבט זריז על הרשומות האחרונות ללא הרחבה
+
+### Technical 🔧
+- Next.js 16.1.1 (Turbopack)
+- TypeScript 5
+- Tailwind CSS 3.3.0
+- React 18
+- RTL support: `<html lang="he" dir="rtl">`
+- Mobile-first: `max-w-md` (448px)
+
+---
+
+## [Phase 0 - Vercel Test] - 2025-12-30 ✅
+
+### Added ✨
+- Next.js 14 project initialization
+- Basic test page: "THIS IS A VERCEL TEST"
+- Vercel deployment configuration
+- GitHub → Vercel connection
+
+### Fixed 🐛
+- Vercel build error: Added `vercel.json` with framework config
+
+### Deployed 🚀
+- Live URL: https://buki-wallet-mhrw.vercel.app
+- Branch: `phase-0-vercel-test`
+
+---
+
+## Git Workflow הסטוריה
+
+### Branches Created
+1. `main` - Production baseline (2025-12-30)
+2. `phase-0-vercel-test` - Vercel connection test (2025-12-30)
+3. `phase-1-poc-mockup` - POC UI development (2025-12-31)
+
+### Commits Summary
+- Initial Next.js setup
+- Add vercel.json configuration
+- Phase 1: Complete UI mockup with Hebrew RTL
+- Add modal with child-specific colors
+- Add internal scrolling for transactions
+
+---
+
+## Upcoming - Phase 2 (מתוכנן)
+
+### Planned Features 📅
+- [ ] LocalStorage data persistence
+- [ ] Real transaction add/edit/delete
+- [ ] Automatic balance calculation
+- [ ] Parent authentication (password)
+- [ ] Session management
+- [ ] Toast notifications
+- [ ] Error handling
+- [ ] Loading states
+
+---
+
+## Version History
+
+| Version | Date | Phase | Status |
+|---------|------|-------|--------|
+| 0.3.0 | 2025-12-31 | Phase 1 | 🔄 In Progress |
+| 0.2.0 | 2025-12-30 | Phase 0 | ✅ Complete |
+| 0.1.0 | 2025-12-30 | Init | ✅ Complete |
