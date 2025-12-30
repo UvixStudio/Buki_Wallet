@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [Phase 1 - POC] - 2025-12-31 (בפיתוח)
+## [Phase 1 - POC] - 2025-12-31 ✅ הושלם!
 
 ### Added ✨
 - UI מלא עם שני סקשנים לילדים (יונתן, אמיר)
@@ -38,6 +38,12 @@ All notable changes to this project will be documented in this file.
 - React 18
 - RTL support: `<html lang="he" dir="rtl">`
 - Mobile-first: `max-w-md` (448px)
+
+### Deployed 🚀
+- **Live URL:** https://buki-wallet-mhrw-git-phase-1-poc-mockup-yuval-cohens-projects.vercel.app
+- **Branch:** phase-1-poc-mockup  
+- **Status:** ✅ Working on mobile and desktop
+- **Verified:** iOS/Android mobile browsers, Desktop Chrome
 
 ---
 

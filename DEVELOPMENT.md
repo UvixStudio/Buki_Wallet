@@ -2,13 +2,13 @@
 
 ## סטטוס פרויקט
 
-**Phase נוכחי:** Phase 1 - POC Mockup (בפיתוח)
+**Phase נוכחי:** Phase 1 - POC Mockup ✅ הושלם!
 
 **Branch פעיל:** `phase-1-poc-mockup`
 
 **Live URLs:**
 - **Phase 0 Test:** https://buki-wallet-mhrw.vercel.app (branch: `phase-0-vercel-test`)
-- **Phase 1 POC:** טרם פורס
+- **Phase 1 POC:** https://buki-wallet-mhrw-git-phase-1-poc-mockup-yuval-cohens-projects.vercel.app ✅
 
 ---
 
@@ -18,7 +18,7 @@
 |--------|------|-------|
 | `main` | Production baseline | ✅ Active |
 | `phase-0-vercel-test` | בדיקת חיבור Vercel | ✅ Complete |
-| `phase-1-poc-mockup` | POC עם UI מלא | 🔄 In Progress |
+| `phase-1-poc-mockup` | POC עם UI מלא | ✅ Complete |
 | `phase-2-functional` | פיתוח פונקציונאלי | 📅 Planned |
 
 ---
@@ -41,9 +41,9 @@
 - **מודל הוספה** - טופס מעוצב (לא שומר נתונים)
 - **responsive design** - Mobile-first (max-width: 448px)
 
-#### ⬜ מה חסר (Phase 1)
+#### ✅ מה בנוי (הושלם)
 - פריסה ל-Vercel
-- אימות במכשירים שונים
+- אימות במכשירים שונים (iOS/Android + Desktop)
 
 ---
 
