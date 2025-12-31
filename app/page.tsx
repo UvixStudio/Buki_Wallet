@@ -1,92 +1,137 @@
 "use client";
 
 import { useState } from "react";
-
-// Types
-type TransactionType = "income" | "expense";
-
-interface Transaction {
-  id: string;
-  type: TransactionType;
-  amount: number;
-  description: string;
-  timestamp: string;
-}
-
-interface Child {
-  id: string;
-  name: string;
-  color: string;
-  balance: number;
-  transactions: Transaction[];
-}
-
-// Placeholder Data - 20 transactions per child
-const generateTransactions = (childId: string, count: number): Transaction[] => {
-  const types: TransactionType[] = ["income", "expense"];
-  const descriptions = {
-    income: [
-      "דמי כיס שבועי",
-      "מתנת יום הולדת",
-      "עבודות בית",
-      "מתנה מסבתא וסבא",
-      "מכירת צעצועים ישנים",
-      "עזרה בקניות",
-      "בונוס ציונים",
-      "פיית שיניים",
-    ],
-    expense: [
-      "מכולת",
-      "גלידה",
-      "צעצועים",
-      "מדבקות",
-      "ספרים",
-      "משחק בטלפון",
-      "חטיפים",
-      "ציוד לאמנות",
-    ],
-  };
-
-  return Array.from({ length: count }, (_, i) => {
-    const type = types[Math.floor(Math.random() * types.length)];
-    const descList = descriptions[type];
-    const description = descList[Math.floor(Math.random() * descList.length)];
-    const amount = Math.random() * 80 + 5; // 5-85
-    const daysAgo = i * 0.5; // Spread over time
-
-    return {
-      id: `tx_${childId}_${i}`,
-      type,
-      amount: Math.round(amount * 100) / 100,
-      description,
-      timestamp: new Date(Date.now() - daysAgo * 86400000).toISOString(),
-    };
-  });
-};
-
-const placeholderChildren: Child[] = [
-  {
-    id: "jonathan",
-    name: "יונתן",
-    color: "#1E3A8A", // Navy Blue
-    balance: 150.0,
-    transactions: generateTransactions("jonathan", 20),
-  },
-  {
-    id: "amir",
-    name: "אמיר",
-    color: "#EA580C", // Orange
-    balance: 85.5,
-    transactions: generateTransactions("amir", 20),
-  },
-];
+import { useWallet, type TransactionType } from "./context/WalletContext";
 
 export default function Home() {
-  const [children] = useState<Child[]>(placeholderChildren);
+  const { children, getBalance, addTransaction, updateTransaction, deleteTransaction, resetAllData } = useWallet();
   const [expandedChild, setExpandedChild] = useState<string | null>(null);
   const [isParentMode, setIsParentMode] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedChildForAdd, setSelectedChildForAdd] = useState<string | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Form state
+  const [formType, setFormType] = useState<TransactionType>("income");
+  const [formAmount, setFormAmount] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+
+  const handleAddTransaction = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedChildForAdd || !formAmount || !formDescription) {
+      alert("יש למלא את כל השדות");
+      return;
+    }
+
+    const amount = parseFloat(formAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("סכום לא תקין");
+      return;
+    }
+
+    addTransaction(selectedChildForAdd, {
+      type: formType,
+      amount,
+      description: formDescription,
+    });
+
+    // Reset form
+    setFormType("income");
+    setFormAmount("");
+    setFormDescription("");
+    setShowAddModal(false);
+    setSelectedChildForAdd(null);
+  };
+
+  const handleCloseModal = () => {
+    setFormType("income");
+    setFormAmount("");
+    setFormDescription("");
+    setShowAddModal(false);
+    setSelectedChildForAdd(null);
+  };
+
+  const handleTransactionClick = (transactionId: string) => {
+    if (!isParentMode) return;
+    
+    const transaction = children
+      .flatMap(c => c.transactions)
+      .find(t => t.id === transactionId);
+    
+    if (!transaction) return;
+    
+    setSelectedTransaction(transactionId);
+    setFormType(transaction.type);
+    setFormAmount(transaction.amount.toString());
+    setFormDescription(transaction.description);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateTransaction = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedTransaction || !formAmount || !formDescription) {
+      alert("יש למלא את כל השדות");
+      return;
+    }
+
+    const amount = parseFloat(formAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("סכום לא תקין");
+      return;
+    }
+
+    updateTransaction(selectedTransaction, {
+      type: formType,
+      amount,
+      description: formDescription,
+    });
+
+    // Reset form
+    setFormType("income");
+    setFormAmount("");
+    setFormDescription("");
+    setShowEditModal(false);
+    setSelectedTransaction(null);
+  };
+
+  const handleDeleteTransaction = () => {
+    if (!selectedTransaction) return;
+    
+    const confirmed = window.confirm("האם אתה בטוח שברצונך למחוק רשומה זו?");
+    if (!confirmed) return;
+    
+    deleteTransaction(selectedTransaction);
+    
+    // Reset form
+    setFormType("income");
+    setFormAmount("");
+    setFormDescription("");
+    setShowEditModal(false);
+    setSelectedTransaction(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setFormType("income");
+    setFormAmount("");
+    setFormDescription("");
+    setShowEditModal(false);
+    setSelectedTransaction(null);
+  };
+
+  const handleRefreshBalance = () => {
+    setIsRefreshing(true);
+    setRefreshKey(prev => prev + 1);
+    
+    // Stop animation after 800ms
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 800);
+  };
 
   const formatCurrency = (amount: number) => {
     return `₪${amount.toFixed(2)}`;
@@ -124,16 +169,27 @@ export default function Home() {
             <div className="text-3xl">🐷</div>
             <h1 className="text-xl font-bold text-slate-900">ארנק בוקי</h1>
           </div>
-          <button
-            onClick={() => setIsParentMode(!isParentMode)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
-              isParentMode
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-200 text-slate-900 hover:bg-gray-300"
-            }`}
-          >
-            {isParentMode ? "🔒 מצב הורה" : "🔓 מצב הורה"}
-          </button>
+          <div className="flex items-center gap-2">
+            {isParentMode && (
+              <button
+                onClick={resetAllData}
+                className="px-4 py-2 rounded-full font-medium transition-all text-sm bg-red-100 text-red-700 hover:bg-red-200"
+                title="איפוס כל הנתונים"
+              >
+                🗑️ איפוס
+              </button>
+            )}
+            <button
+              onClick={() => setIsParentMode(!isParentMode)}
+              className={`px-4 py-2 rounded-full font-medium transition-all text-sm ${
+                isParentMode
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-slate-900 hover:bg-gray-300"
+              }`}
+            >
+              {isParentMode ? "🔒 מצב הורה" : "🔓 מצב הורה"}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -165,16 +221,32 @@ export default function Home() {
                   <div className="flex items-center gap-3">
                     <h2 className="text-lg font-semibold">{child.name}</h2>
                     {!isCollapsed && (
-                      <div className="bg-white px-3 py-1 rounded-full">
-                        <span
-                          className={`text-base font-bold ${
-                            child.balance >= 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {formatCurrency(child.balance)}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <div className={`bg-white px-3 py-1 rounded-full transition-all duration-300 ${
+                          isRefreshing ? "ring-2 ring-green-400 shadow-lg shadow-green-200" : ""
+                        }`}>
+                          <span
+                            className={`text-base font-bold ${
+                              getBalance(child.id) >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {formatCurrency(getBalance(child.id))}
+                          </span>
+                        </div>
+                        {isParentMode && (
+                          <button
+                            onClick={handleRefreshBalance}
+                            className={`text-white hover:text-white/80 transition-transform text-lg w-8 h-8 flex items-center justify-center bg-white/20 rounded-full ${
+                              isRefreshing ? "animate-spin" : ""
+                            }`}
+                            title="רענן חישוב"
+                            disabled={isRefreshing}
+                          >
+                            ⟳
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -186,7 +258,7 @@ export default function Home() {
                           setSelectedChildForAdd(child.id);
                           setShowAddModal(true);
                         }}
-                        className="px-3 py-1.5 bg-white text-slate-900 rounded text-sm font-medium hover:bg-gray-100 transition-colors"
+                        className="px-3 py-1.5 bg-white text-slate-900 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
                       >
                         + הוסף
                       </button>
@@ -196,7 +268,7 @@ export default function Home() {
                         onClick={() =>
                           setExpandedChild(isExpanded ? null : child.id)
                         }
-                        className="px-2 py-1.5 bg-white/20 hover:bg-white/30 rounded text-lg transition-colors"
+                        className="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full text-lg transition-colors"
                         title={isExpanded ? "יציאה ממסך מלא" : "מסך מלא"}
                       >
                         {isExpanded ? "⛶" : "⛶"}
@@ -205,9 +277,9 @@ export default function Home() {
                     {isCollapsed && (
                       <button
                         onClick={() => setExpandedChild(null)}
-                        className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-sm transition-colors"
+                        className="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full text-xs transition-colors"
                       >
-                        הצג
+                        ▼
                       </button>
                     )}
                   </div>
@@ -225,6 +297,7 @@ export default function Home() {
                     {displayTransactions.map((transaction, index) => (
                       <div
                         key={transaction.id}
+                        onClick={() => handleTransactionClick(transaction.id)}
                         className={`px-4 py-3 flex items-start gap-3 ${
                           index % 2 === 1 ? "bg-gray-50" : "bg-white"
                         } ${
@@ -279,17 +352,14 @@ export default function Home() {
                 הוספת רשומה - {children.find(c => c.id === selectedChildForAdd)?.name}
               </h3>
               <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setSelectedChildForAdd(null);
-                }}
+                onClick={handleCloseModal}
                 className="text-white hover:text-gray-200 text-2xl leading-none"
               >
                 ×
               </button>
             </div>
 
-            <form className="space-y-4 p-6">
+            <form onSubmit={handleAddTransaction} className="space-y-4 p-6">
               {/* Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -301,7 +371,8 @@ export default function Home() {
                       type="radio"
                       name="type"
                       value="income"
-                      defaultChecked
+                      checked={formType === "income"}
+                      onChange={(e) => setFormType(e.target.value as TransactionType)}
                       className="ml-2 text-green-600"
                     />
                     <span className="text-green-600 font-medium">↑ הכנסה</span>
@@ -311,6 +382,8 @@ export default function Home() {
                       type="radio"
                       name="type"
                       value="expense"
+                      checked={formType === "expense"}
+                      onChange={(e) => setFormType(e.target.value as TransactionType)}
                       className="ml-2 text-red-600"
                     />
                     <span className="text-red-600 font-medium">↓ הוצאה</span>
@@ -327,8 +400,11 @@ export default function Home() {
                   type="number"
                   step="0.01"
                   min="0"
+                  value={formAmount}
+                  onChange={(e) => setFormAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
                 />
               </div>
 
@@ -340,8 +416,11 @@ export default function Home() {
                 <input
                   type="text"
                   maxLength={100}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="על מה זה?"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
                 />
               </div>
 
@@ -354,7 +433,7 @@ export default function Home() {
                   type="text"
                   value={new Date().toLocaleString("he-IL")}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-50 text-gray-500"
                 />
               </div>
 
@@ -362,24 +441,14 @@ export default function Home() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // In POC, just close modal (data not saved)
-                    alert("✅ הרשומה נוספה! (מוקאפ - לא נשמר)");
-                    setShowAddModal(false);
-                    setSelectedChildForAdd(null);
-                  }}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors"
                 >
                   שמירה
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedChildForAdd(null);
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-slate-700 font-medium hover:bg-gray-50 transition-colors"
+                  onClick={handleCloseModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-full text-slate-700 font-medium hover:bg-gray-50 transition-colors"
                 >
                   ביטול
                 </button>
@@ -388,6 +457,141 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Edit Transaction Modal */}
+      {showEditModal && selectedTransaction && (() => {
+        const transaction = children
+          .flatMap(c => c.transactions)
+          .find(t => t.id === selectedTransaction);
+        const child = children.find(c => c.transactions.some(t => t.id === selectedTransaction));
+        
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden">
+              {/* Header with child's color */}
+              <div 
+                className="px-6 py-4 flex items-center justify-between"
+                style={{ backgroundColor: child?.color }}
+              >
+                <h3 className="text-lg font-semibold text-white">
+                  עריכת רשומה - {child?.name}
+                </h3>
+                <button
+                  onClick={handleCloseEditModal}
+                  className="text-white hover:text-gray-200 text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateTransaction} className="space-y-4 p-6">
+                {/* Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    סוג
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="edit-type"
+                        value="income"
+                        checked={formType === "income"}
+                        onChange={(e) => setFormType(e.target.value as TransactionType)}
+                        className="ml-2 text-green-600"
+                      />
+                      <span className="text-green-600 font-medium">↑ הכנסה</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="edit-type"
+                        value="expense"
+                        checked={formType === "expense"}
+                        onChange={(e) => setFormType(e.target.value as TransactionType)}
+                        className="ml-2 text-red-600"
+                      />
+                      <span className="text-red-600 font-medium">↓ הוצאה</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    סכום (₪)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formAmount}
+                    onChange={(e) => setFormAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    תיאור
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={100}
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="על מה זה?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                {/* Date/Time Display */}
+                {transaction && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      תאריך ושעה
+                    </label>
+                    <input
+                      type="text"
+                      value={new Date(transaction.timestamp).toLocaleString("he-IL")}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-50 text-gray-500"
+                    />
+                  </div>
+                )}
+
+                {/* Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    עדכן
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteTransaction}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-full font-medium hover:bg-red-700 transition-colors"
+                  >
+                    מחק
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCloseEditModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-full text-slate-700 font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

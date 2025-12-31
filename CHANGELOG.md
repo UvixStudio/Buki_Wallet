@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Phase 2 - Functional] - 2025-12-31 🔄 בפיתוח
+
+### Added ✨
+- **LocalStorage ניהול נתונים**: שמירה אוטומטית של כל השינויים
+- **Context API**: ניהול State מרכזי עם WalletContext
+- **הוספת רשומה אמיתית**: טופס מלא עם validation + שמירה
+- **עריכת רשומה**: לחיצה על רשומה פותחת מודל עריכה
+- **מחיקת רשומה**: כפתור מחק + אישור "האם אתה בטוח?"
+- **חישוב יתרות אוטומטי**: יתרה = יתרה התחלתית + סכום כל הרשומות
+- **כפתור Refresh (⟳)**: עיגול מושלם עם אנימציית סיבוב
+- **כפתור איפוס**: מחיקה מלאה של LocalStorage (לבדיקות)
+- **אנימציות חזותיות**: כפתור מסתובב + הבהוב ירוק של היתרה
+
+### Changed 🔄
+- **עיצוב כפתורים**: כל הכפתורים `rounded-full` (קפסולות עגולות)
+- **כפתורים איקוניים**: w-8 h-8 (עיגולים מושלמים)
+- **שדות קלט**: גם עם `rounded-full`
+- **כפתור "הצג"**: שונה מטקסט לאייקון ▼
+- **מודל עריכה**: כפתורים "עדכן", "מחק", "ביטול"
+
+### Technical 🔧
+- WalletContext עם כל ה-CRUD operations
+- LocalStorage אוטומטי (save + load)
+- TypeScript interfaces: Child, Transaction, TransactionType
+- פונקציות: addTransaction, updateTransaction, deleteTransaction, resetAllData
+
+### Design System 🎨
+- **עקביות ואחידות**: כל הכפתורים עיגולים
+- **עיגולים מושלמים**: כפתורים איקוניים (w-8 h-8 rounded-full)
+- **קפסולות**: כפתורים טקסטואליים עם rounded-full
+- **אנימציות עדינות**: spin + pulse + ring effects
+
+---
+
 ## [Phase 1 - POC] - 2025-12-31 ✅ הושלם!
 
 ### Added ✨
