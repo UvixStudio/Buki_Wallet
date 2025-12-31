@@ -4,7 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [Phase 2 - Functional] - 2025-12-31 🔄 בפיתוח
+## [Phase 3 - Authentication] - 2025-12-31 🔐 בפיתוח
+
+### Added ✨
+- **מסך Welcome**: 2 כפתורים - כניסת ילדים / כניסת הורים
+- **מסך PIN**: 4 עיגולים + מקלדת מספרים + אימות
+- **בחירת פרופיל**: יובל/עינב + אימוג'ים
+- **Session Management**: שמירה אוטומטית של מצב התחברות
+- **תפריט Hamburger (☰)**: פרופיל אדמין + 4 אופציות
+- **תיוג רשומות**: שדה createdBy בכל רשומה
+- **תצוגת יוצר**: "נוסף ע"י: יובל" בכל רשומה
+
+### Changed 🔄
+- **הדר**: כפתור האמבורגר + פרופיל אדמין
+- **Flow**: Welcome → PIN → Main App
+- **מצב ילדים**: רק צפייה (ללא עריכה)
+- **מצב הורים**: כל האופציות + תפריט
+
+### Technical 🔧
+- 3 קומפוננטות חדשות: WelcomeScreen, PINScreen, SideMenu
+- Session persistence ב-LocalStorage
+- AuthState management: welcome | pin | child | parent
+- Parent profiles: yuval/einav + emoji icons
+- Transaction author tracking
+
+---
+
+## [Phase 2 - Functional] - 2025-12-31 🔄 הושלם
 
 ### Added ✨
 - **LocalStorage ניהול נתונים**: שמירה אוטומטית של כל השינויים

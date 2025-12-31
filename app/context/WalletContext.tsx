@@ -12,6 +12,9 @@ export interface Transaction {
   amount: number;
   description: string;
   timestamp: string;
+  createdBy?: "yuval" | "einav" | "guest";
+  lastModifiedBy?: "yuval" | "einav";
+  lastModifiedAt?: string;
 }
 
 export interface Child {
@@ -30,6 +33,9 @@ interface WalletContextType {
   setInitialBalance: (childId: string, balance: number) => void;
   getBalance: (childId: string) => number;
   resetAllData: () => void;
+  resetTransactionsOnly: () => void;
+  currentParent: "yuval" | "einav" | "guest" | null;
+  setCurrentParent: (parent: "yuval" | "einav" | "guest" | null) => void;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -57,6 +63,7 @@ const defaultChildren: Child[] = [
 
 export function WalletProvider({ children: childrenProp }: { children: ReactNode }) {
   const [children, setChildren] = useState<Child[]>(defaultChildren);
+  const [currentParent, setCurrentParent] = useState<"yuval" | "einav" | "guest" | null>(null);
 
   // Load data from LocalStorage on mount
   useEffect(() => {
@@ -86,6 +93,7 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
       id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       childId,
       timestamp: new Date().toISOString(),
+      createdBy: currentParent || "guest",
     };
 
     setChildren((prev) =>
@@ -108,7 +116,14 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
       prev.map((child) => ({
         ...child,
         transactions: child.transactions.map((tx) =>
-          tx.id === transactionId ? { ...tx, ...updates } : tx
+          tx.id === transactionId 
+            ? { 
+                ...tx, 
+                ...updates,
+                lastModifiedBy: (currentParent === "guest" ? undefined : currentParent) as "yuval" | "einav" | undefined,
+                lastModifiedAt: new Date().toISOString(),
+              } 
+            : tx
         ),
       }))
     );
@@ -154,6 +169,17 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  // Reset only transactions (keep PIN and auth data)
+  const resetTransactionsOnly = () => {
+    setChildren((prev) =>
+      prev.map((child) => ({
+        ...child,
+        initialBalance: 0,
+        transactions: [],
+      }))
+    );
+  };
+
   return (
     <WalletContext.Provider
       value={{
@@ -164,6 +190,9 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
         setInitialBalance,
         getBalance,
         resetAllData,
+        resetTransactionsOnly,
+        currentParent,
+        setCurrentParent,
       }}
     >
       {childrenProp}

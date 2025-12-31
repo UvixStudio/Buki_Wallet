@@ -1,10 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWallet, type TransactionType } from "./context/WalletContext";
+import WelcomeScreen from "./components/WelcomeScreen";
+import PINScreen from "./components/PINScreen";
+import SetupPINScreen from "./components/SetupPINScreen";
+import RecoveryScreen from "./components/RecoveryScreen";
+import SideMenu from "./components/SideMenu";
+import ResetDataModal from "./components/ResetDataModal";
+import { isFirstTimeSetup, userExists } from "./services/authService";
+import { exportToExcel } from "./services/excelService";
+
+type AuthState = "welcome" | "pin" | "setup" | "recovery" | "child" | "parent";
+type ParentType = "yuval" | "einav";
+
+const PARENT_DATA = {
+  yuval: { name: "יובל", emoji: "👨" },
+  einav: { name: "עינב", emoji: "👱‍♀️" },
+};
 
 export default function Home() {
-  const { children, getBalance, addTransaction, updateTransaction, deleteTransaction, resetAllData } = useWallet();
+  const { children, getBalance, addTransaction, updateTransaction, deleteTransaction, resetTransactionsOnly, currentParent, setCurrentParent } = useWallet();
+  
+  // Auth state
+  const [authState, setAuthState] = useState<AuthState>("welcome");
+  const [currentParentType, setCurrentParentType] = useState<ParentType | null>(null);
+  const [setupParentId, setSetupParentId] = useState<ParentType | null>(null);
+  const [recoveryParentId, setRecoveryParentId] = useState<ParentType | null>(null);
+  const [showSideMenu, setShowSideMenu] = useState(false);
   const [expandedChild, setExpandedChild] = useState<string | null>(null);
   const [isParentMode, setIsParentMode] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -13,11 +36,96 @@ export default function Home() {
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   // Form state
   const [formType, setFormType] = useState<TransactionType>("income");
   const [formAmount, setFormAmount] = useState("");
   const [formDescription, setFormDescription] = useState("");
+
+  // Load auth state from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("buki_auth_state");
+    if (saved) {
+      try {
+        const { state, parent } = JSON.parse(saved);
+        setAuthState(state);
+        if (parent) {
+          setCurrentParentType(parent);
+          setCurrentParent(parent);
+          setIsParentMode(state === "parent");
+        }
+      } catch (e) {
+        console.error("Failed to load auth state", e);
+      }
+    }
+  }, [setCurrentParent]);
+
+  // Save auth state
+  const saveAuthState = (state: AuthState, parent?: ParentType) => {
+    localStorage.setItem("buki_auth_state", JSON.stringify({ state, parent }));
+  };
+
+  // Auth handlers
+  const handleSelectChild = () => {
+    setAuthState("child");
+    setCurrentParent("guest");
+    saveAuthState("child");
+  };
+
+  const handleSelectParent = () => {
+    // Check if this is first-time setup
+    if (isFirstTimeSetup()) {
+      // Yuval is always the first (main admin)
+      setSetupParentId("yuval");
+      setAuthState("setup");
+    } else {
+      setAuthState("pin");
+    }
+  };
+
+  const handlePINSuccess = (parent: ParentType) => {
+    setAuthState("parent");
+    setCurrentParentType(parent);
+    setCurrentParent(parent);
+    setIsParentMode(true);
+    saveAuthState("parent", parent);
+  };
+
+  const handleNeedSetup = (parent: ParentType) => {
+    // Check if this user needs setup
+    if (!userExists(parent)) {
+      const isMainAdmin = isFirstTimeSetup() || parent === "yuval";
+      setSetupParentId(parent);
+      setAuthState("setup");
+    }
+  };
+
+  const handleForgotPIN = (parent: ParentType) => {
+    setRecoveryParentId(parent);
+    setAuthState("recovery");
+  };
+
+  const handleSetupSuccess = () => {
+    // After setup, go to PIN screen for login
+    setSetupParentId(null);
+    setAuthState("pin");
+  };
+
+  const handleRecoverySuccess = () => {
+    // After recovery, go to PIN screen for login
+    setRecoveryParentId(null);
+    setAuthState("pin");
+  };
+
+  const handleLogout = () => {
+    setAuthState("welcome");
+    setCurrentParentType(null);
+    setCurrentParent(null);
+    setIsParentMode(false);
+    localStorage.removeItem("buki_auth_state");
+    setShowSideMenu(false);
+  };
 
   const handleAddTransaction = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +241,20 @@ export default function Home() {
     }, 800);
   };
 
+  const handleExportExcel = () => {
+    exportToExcel(children);
+  };
+
+  const handleResetData = () => {
+    setShowResetModal(true);
+  };
+
+  const handleConfirmReset = () => {
+    resetTransactionsOnly();
+    setShowResetModal(false);
+    alert("✅ המערכת אופסה בהצלחה!");
+  };
+
   const formatCurrency = (amount: number) => {
     return `₪${amount.toFixed(2)}`;
   };
@@ -160,38 +282,116 @@ export default function Home() {
     }
   };
 
+  const getAuthorName = (createdBy?: "yuval" | "einav" | "guest") => {
+    if (!createdBy || createdBy === "guest") return null;
+    return PARENT_DATA[createdBy].name;
+  };
+
+  // Show welcome, setup, recovery, or PIN screen
+  if (authState === "welcome") {
+    return (
+      <WelcomeScreen
+        onSelectChild={handleSelectChild}
+        onSelectParent={handleSelectParent}
+      />
+    );
+  }
+
+  if (authState === "setup" && setupParentId) {
+    const isMainAdmin = isFirstTimeSetup() || setupParentId === "yuval";
+    return (
+      <SetupPINScreen
+        parentId={setupParentId}
+        parentName={PARENT_DATA[setupParentId].name}
+        parentEmoji={PARENT_DATA[setupParentId].emoji}
+        isMainAdmin={isMainAdmin}
+        onSuccess={handleSetupSuccess}
+        onBack={() => {
+          setSetupParentId(null);
+          setAuthState("welcome");
+        }}
+      />
+    );
+  }
+
+  if (authState === "recovery" && recoveryParentId) {
+    return (
+      <RecoveryScreen
+        userId={recoveryParentId}
+        userName={PARENT_DATA[recoveryParentId].name}
+        onSuccess={handleRecoverySuccess}
+        onBack={() => {
+          setRecoveryParentId(null);
+          setAuthState("pin");
+        }}
+      />
+    );
+  }
+
+  if (authState === "pin") {
+    return (
+      <PINScreen
+        onSuccess={handlePINSuccess}
+        onNeedSetup={handleNeedSetup}
+        onForgotPIN={handleForgotPIN}
+        onBack={() => setAuthState("welcome")}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {isParentMode && (
+              <button
+                onClick={() => setShowSideMenu(true)}
+                className="text-2xl text-slate-700 hover:text-slate-900 transition-colors"
+                title="תפריט"
+              >
+                ☰
+              </button>
+            )}
             <div className="text-3xl">🐷</div>
             <h1 className="text-xl font-bold text-slate-900">ארנק בוקי</h1>
           </div>
           <div className="flex items-center gap-2">
-            {isParentMode && (
-              <button
-                onClick={resetAllData}
-                className="px-4 py-2 rounded-full font-medium transition-all text-sm bg-red-100 text-red-700 hover:bg-red-200"
-                title="איפוס כל הנתונים"
-              >
-                🗑️ איפוס
-              </button>
+            {isParentMode && currentParentType && (
+              <>
+                <button
+                  onClick={handleExportExcel}
+                  className="w-9 h-9 flex items-center justify-center bg-blue-50 rounded-full hover:bg-blue-100 transition-colors"
+                  title="הורד גיבוי Excel"
+                >
+                  <svg className="w-5 h-5 text-slate-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full">
+                  <span className="text-xl">{PARENT_DATA[currentParentType].emoji}</span>
+                  <span className="text-sm font-medium text-slate-700">{PARENT_DATA[currentParentType].name}</span>
+                </div>
+              </>
             )}
-            <button
-              onClick={() => setIsParentMode(!isParentMode)}
-              className={`px-4 py-2 rounded-full font-medium transition-all text-sm ${
-                isParentMode
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-gray-200 text-slate-900 hover:bg-gray-300"
-              }`}
-            >
-              {isParentMode ? "🔒 מצב הורה" : "🔓 מצב הורה"}
-            </button>
           </div>
         </div>
       </header>
+
+      {/* Side Menu */}
+      {isParentMode && currentParentType && (
+        <SideMenu
+          isOpen={showSideMenu}
+          onClose={() => setShowSideMenu(false)}
+          parentName={PARENT_DATA[currentParentType].name}
+          parentEmoji={PARENT_DATA[currentParentType].emoji}
+          onChangePIN={() => alert("ממוש קרוב...")}
+          onUpdateEmail={() => alert("ממוש קרוב...")}
+          onResetData={handleResetData}
+          onLogout={handleLogout}
+        />
+      )}
 
       {/* Main Content */}
       <main className="max-w-md mx-auto p-4">
@@ -321,6 +521,11 @@ export default function Home() {
                           <p className="text-sm text-slate-700 truncate">
                             {transaction.description}
                           </p>
+                          {isParentMode && getAuthorName(transaction.createdBy) && (
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              נוסף ע"י: {getAuthorName(transaction.createdBy)}
+                            </p>
+                          )}
                         </div>
 
                         {/* Date & Time - Left side in RTL */}
@@ -592,6 +797,17 @@ export default function Home() {
           </div>
         );
       })()}
+
+      {/* Reset Data Modal */}
+      {isParentMode && currentParentType && (
+        <ResetDataModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirmReset={handleConfirmReset}
+          children={children}
+          currentParentId={currentParentType}
+        />
+      )}
     </div>
   );
 }
