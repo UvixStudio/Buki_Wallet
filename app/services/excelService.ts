@@ -73,6 +73,10 @@ export const exportToExcel = (children: Child[]): void => {
     // Create worksheet from data
     const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
 
+    // Set RTL (Right-to-Left) for Hebrew
+    if (!worksheet['!views']) worksheet['!views'] = [{}];
+    worksheet['!views'][0] = { rightToLeft: true };
+
     // Set column widths
     worksheet['!cols'] = [
       { wch: 12 }, // תאריך
@@ -83,6 +87,27 @@ export const exportToExcel = (children: Child[]): void => {
       { wch: 12 }, // נוסף על ידי
       { wch: 12 }, // יתרה שוטפת
     ];
+
+    // Style header row
+    const headerRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+      if (!worksheet[cellAddress]) continue;
+      
+      worksheet[cellAddress].s = {
+        fill: {
+          fgColor: { rgb: child.color.replace('#', '') },
+        },
+        font: {
+          color: { rgb: 'FFFFFF' },
+          bold: true,
+        },
+        alignment: {
+          horizontal: 'center',
+          vertical: 'center',
+        },
+      };
+    }
 
     // Add worksheet to workbook with child's name
     XLSX.utils.book_append_sheet(workbook, worksheet, child.name);

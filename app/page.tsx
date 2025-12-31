@@ -95,7 +95,8 @@ export default function Home() {
   const handleNeedSetup = (parent: ParentType) => {
     // Check if this user needs setup
     if (!userExists(parent)) {
-      const isMainAdmin = isFirstTimeSetup() || parent === "yuval";
+      // Main admin is only yuval if no users exist yet, OR yuval if he doesn't exist
+      const isMainAdmin = parent === "yuval" && isFirstTimeSetup();
       setSetupParentId(parent);
       setAuthState("setup");
     }
@@ -298,7 +299,8 @@ export default function Home() {
   }
 
   if (authState === "setup" && setupParentId) {
-    const isMainAdmin = isFirstTimeSetup() || setupParentId === "yuval";
+    // Main admin = yuval AND first time (no other users exist)
+    const isMainAdmin = setupParentId === "yuval" && isFirstTimeSetup();
     return (
       <SetupPINScreen
         parentId={setupParentId}
