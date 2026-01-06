@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { setupRecoveryHints, createUser, verifySingleHint } from "../services/authService";
+import { createUser } from "../services/authService";
 
 interface SetupPINScreenProps {
   parentId: "yuval" | "einav";
@@ -58,7 +58,7 @@ export default function SetupPINScreen({
 
     // If not main admin, create user immediately
     if (!isMainAdmin) {
-      await createUser(parentId, pin1, false);
+      await createUser(parentId, pin1, "", "", false);
       onSuccess();
       return;
     }
@@ -96,16 +96,8 @@ export default function SetupPINScreen({
       return;
     }
 
-    // Setup recovery hints in storage with hardcoded values
-    await setupRecoveryHints(
-      "Gmail PIN",
-      GMAIL_PIN,
-      "ID",
-      ID_NUMBER
-    );
-
-    // Create main admin user
-    await createUser(parentId, pin1, true);
+    // Create main admin user with recovery hints
+    await createUser(parentId, pin1, selectedHint === "hint1" ? "Gmail PIN" : "ID", selectedHint === "hint1" ? GMAIL_PIN : ID_NUMBER, true);
     onSuccess();
   };
 

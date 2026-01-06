@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { verifySingleHint, getRecoveryHints, resetUserPIN } from "../services/authService";
+import { getRecoveryHint, verifyRecovery, resetUserPIN } from "../services/authService";
 
 interface RecoveryScreenProps {
   userId: "yuval" | "einav";
@@ -16,25 +16,24 @@ export default function RecoveryScreen({
   onSuccess,
   onBack,
 }: RecoveryScreenProps) {
-  const [hints, setHints] = useState<{ hint1: string; hint2: string } | null>(null);
-  const [selectedHint, setSelectedHint] = useState<"hint1" | "hint2" | null>(null);
-  const [answer, setAnswer] = useState("");
+  const [hint, setHint] = useState<string | null>(null);
+  const [recoveryId, setRecoveryId] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
-  const [step, setStep] = useState<"select" | "verify" | "newpin">("select");
+  const [step, setStep] = useState<"verify" | "newpin">("verify");
   const [error, setError] = useState("");
 
-  // Load hints on mount
+  // Load hint on mount
   useEffect(() => {
-    const loadHints = async () => {
-      const recoveryHints = await getRecoveryHints();
-      setHints(recoveryHints);
+    const loadHint = async () => {
+      const recoveryHint = await getRecoveryHint(userId);
+      setHint(recoveryHint);
     };
-    loadHints();
-  }, []);
+    loadHint();
+  }, [userId]);
 
-  // If no hints available (not main admin and trying to recover)
-  if (!hints) {
+  // If no hint available (user doesn't have recovery set up)
+  if (!hint) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full space-y-8">
@@ -50,7 +49,7 @@ export default function RecoveryScreen({
             <div className="text-5xl mb-2">🔒</div>
             <h2 className="text-2xl font-bold text-slate-900">שחזור קוד</h2>
             <p className="text-slate-600">
-              רק האדמין הראשי יכול לשחזר את הקוד שלך
+              רק האדמין הראשי יכול לשחזר את הקוד שלך או צור משתמש חדש
             </p>
             <p className="text-sm text-slate-500">
               צור קשר עם יובל לאיפוס הקוד
@@ -61,24 +60,17 @@ export default function RecoveryScreen({
     );
   }
 
-  const handleHintSelect = (hint: "hint1" | "hint2") => {
-    setSelectedHint(hint);
-    setAnswer("");
-    setError("");
-    setStep("verify");
-  };
-
-  const handleVerifyHint = async () => {
-    if (!selectedHint || !answer.trim()) {
+  const handleVerifyRecovery = async () => {
+    if (!recoveryId.trim()) {
       setError("הזן תשובה");
       return;
     }
 
-    const verified = await verifySingleHint(selectedHint, answer);
+    const verified = await verifyRecovery(userId, recoveryId);
     
     if (!verified) {
       setError("תשובה שגויה. נסה שוב");
-      setAnswer("");
+      setRecoveryId("");
       return;
     }
 
@@ -125,37 +117,8 @@ export default function RecoveryScreen({
           <span>חזרה</span>
         </button>
 
-        {/* Step 1: Select ONE hint */}
-        {step === "select" && (
-          <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
-            <div className="text-center space-y-2">
-              <div className="text-5xl mb-2">🔓</div>
-              <h2 className="text-2xl font-bold text-slate-900">שחזור קוד</h2>
-              <p className="text-slate-600">
-                בחר רמז אחד לשחזור
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => handleHintSelect("hint1")}
-                className="w-full px-4 py-4 rounded-lg border-2 border-slate-200 bg-white hover:border-[#1E3A8A] hover:bg-blue-50 transition-all text-left"
-              >
-                <div className="font-medium text-slate-900">{hints.hint1}</div>
-              </button>
-
-              <button
-                onClick={() => handleHintSelect("hint2")}
-                className="w-full px-4 py-4 rounded-lg border-2 border-slate-200 bg-white hover:border-[#1E3A8A] hover:bg-blue-50 transition-all text-left"
-              >
-                <div className="font-medium text-slate-900">{hints.hint2}</div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Verify selected hint */}
-        {step === "verify" && selectedHint && (
+        {/* Step: Verify Recovery */}
+        {step === "verify" && (
           <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
             <div className="text-center space-y-2">
               <div className="text-5xl mb-2">🔑</div>
@@ -167,13 +130,13 @@ export default function RecoveryScreen({
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                💡 {selectedHint === "hint1" ? hints.hint1 : hints.hint2}
+                💡 {hint}
               </label>
               <input
                 type="text"
-                value={answer}
+                value={recoveryId}
                 onChange={(e) => {
-                  setAnswer(e.target.value);
+                  setRecoveryId(e.target.value);
                   setError("");
                 }}
                 placeholder="הזן תשובה"
@@ -189,26 +152,13 @@ export default function RecoveryScreen({
               </div>
             )}
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setStep("select");
-                  setSelectedHint(null);
-                  setAnswer("");
-                  setError("");
-                }}
-                className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-full font-semibold hover:bg-slate-50 transition-all"
-              >
-                חזור
-              </button>
-              <button
-                onClick={handleVerifyHint}
-                disabled={!answer.trim()}
-                className="flex-1 px-6 py-3 bg-[#1E3A8A] text-white rounded-full font-semibold hover:bg-[#2d4a9e] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                אמת
-              </button>
-            </div>
+            <button
+              onClick={handleVerifyRecovery}
+              disabled={!recoveryId.trim()}
+              className="w-full px-6 py-3 bg-[#1E3A8A] text-white rounded-full font-semibold hover:bg-[#2d4a9e] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              אמת
+            </button>
           </div>
         )}
 
