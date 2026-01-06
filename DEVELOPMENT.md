@@ -2,14 +2,16 @@
 
 ## סטטוס פרויקט
 
-**Phase נוכחי:** Phase 2 - Functional Development 🚧 בעבודה!
+**Phase נוכחי:** Phase 2 - Functional Development ✅ Complete!
 
 **Branch פעיל:** `phase-2-functional`
 
+**🌐 Production URL:** https://buki-wallet.vercel.app
+
 **Live URLs:**
+- **Production (Phase 2):** https://buki-wallet.vercel.app ✅ **LIVE**
 - **Phase 0 Test:** https://buki-wallet-mhrw.vercel.app (branch: `phase-0-vercel-test`)
 - **Phase 1 POC:** https://buki-wallet-mhrw-git-phase-1-poc-mockup-yuval-cohens-projects.vercel.app ✅
-- **Phase 2 Dev:** https://buki-wallet-hwnaqay5r-yuval-cohens-projects.vercel.app 🚧
 
 ---
 

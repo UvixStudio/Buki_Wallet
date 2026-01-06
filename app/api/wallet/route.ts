@@ -100,3 +100,41 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/**
+ * PUT /api/wallet
+ * Update child information (name, color)
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    await ensureInitialized();
+    const body = await request.json();
+    const { action } = body;
+
+    switch (action) {
+      case 'updateChild': {
+        const { childId, name, color } = body as { childId: string; name: string; color: string };
+        const { sql } = await import('@vercel/postgres');
+        await sql`
+          UPDATE children
+          SET name = ${name}, color = ${color}, updated_at = NOW()
+          WHERE id = ${childId}
+        `;
+        const children = await getAllChildren();
+        return NextResponse.json({ success: true, data: children });
+      }
+
+      default:
+        return NextResponse.json(
+          { success: false, error: 'Invalid action' },
+          { status: 400 }
+        );
+    }
+  } catch (error: any) {
+    console.error('Error in PUT /api/wallet:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Operation failed' },
+      { status: 500 }
+    );
+  }
+}

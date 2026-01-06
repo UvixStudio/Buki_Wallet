@@ -82,6 +82,30 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
 
+      case 'getUser': {
+        const { userId } = body;
+        const user = await getUser(userId);
+        
+        if (!user) {
+          return NextResponse.json({ success: false, error: 'User not found' });
+        }
+        
+        return NextResponse.json({ success: true, user });
+      }
+
+      case 'updateEmail': {
+        const { userId, email } = body;
+        const { sql } = await import('@vercel/postgres');
+        
+        await sql`
+          UPDATE users
+          SET recovery_hint = ${email}, updated_at = NOW()
+          WHERE id = ${userId}
+        `;
+        
+        return NextResponse.json({ success: true });
+      }
+
       default:
         return NextResponse.json(
           { success: false, error: 'Invalid action' },

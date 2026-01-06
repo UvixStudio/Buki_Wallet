@@ -8,8 +8,13 @@ import SetupPINScreen from "./components/SetupPINScreen";
 import RecoveryScreen from "./components/RecoveryScreen";
 import SideMenu from "./components/SideMenu";
 import ResetDataModal from "./components/ResetDataModal";
+import ChildSettingsModal from "./components/ChildSettingsModal";
+import UpdateEmailModal from "./components/UpdateEmailModal";
+import UpdateAppNameModal from "./components/UpdateAppNameModal";
 import { isFirstTimeSetup, userExists } from "./services/authService";
 import { exportToExcel } from "./services/excelService";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRotate, faGear } from '@fortawesome/free-solid-svg-icons';
 
 type AuthState = "welcome" | "pin" | "setup" | "recovery" | "child" | "parent";
 type ParentType = "yuval" | "einav";
@@ -37,6 +42,12 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showChildSettings, setShowChildSettings] = useState(false);
+  const [selectedChildForSettings, setSelectedChildForSettings] = useState<string | null>(null);
+  const [showUpdateEmail, setShowUpdateEmail] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState<string | null>(null);
+  const [showUpdateAppName, setShowUpdateAppName] = useState(false);
+  const [appName, setAppName] = useState("ארנק בוקי");
 
   // Form state
   const [formType, setFormType] = useState<TransactionType>("income");
@@ -60,6 +71,41 @@ export default function Home() {
       }
     }
   }, [setCurrentParent]);
+
+  // Load current user email
+  useEffect(() => {
+    const loadUserEmail = async () => {
+      if (!currentParentType) return;
+      
+      try {
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'getUser',
+            userId: currentParentType,
+          }),
+        });
+        
+        const result = await response.json();
+        if (result.success && result.user) {
+          setCurrentEmail(result.user.recovery_hint || null);
+        }
+      } catch (error) {
+        console.error('Error loading user email:', error);
+      }
+    };
+    
+    loadUserEmail();
+  }, [currentParentType]);
+
+  // Load app name from localStorage
+  useEffect(() => {
+    const savedName = localStorage.getItem('buki_app_name');
+    if (savedName) {
+      setAppName(savedName);
+    }
+  }, []);
 
   // Save auth state
   const saveAuthState = (state: AuthState, parent?: ParentType) => {
@@ -273,6 +319,68 @@ export default function Home() {
     alert("✅ המערכת אופסה בהצלחה!");
   };
 
+  const handleSaveChildSettings = async (childId: string, newName: string, newColor: string) => {
+    try {
+      const response = await fetch('/api/wallet', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateChild',
+          childId,
+          name: newName,
+          color: newColor,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setRefreshKey(prev => prev + 1);
+        setShowChildSettings(false);
+        setSelectedChildForSettings(null);
+      } else {
+        alert('שגיאה בעדכון הילד');
+      }
+    } catch (error) {
+      console.error('Error updating child:', error);
+      alert('שגיאה בעדכון הילד');
+    }
+  };
+
+  const handleUpdateEmail = async (newEmail: string) => {
+    if (!currentParentType) return;
+
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateEmail',
+          userId: currentParentType,
+          email: newEmail,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setShowUpdateEmail(false);
+        setCurrentEmail(newEmail);
+        alert('✅ המייל עודכן בהצלחה!');
+      } else {
+        alert('שגיאה בעדכון המייל');
+      }
+    } catch (error) {
+      console.error('Error updating email:', error);
+      alert('שגיאה בעדכון המייל');
+    }
+  };
+
+  const handleUpdateAppName = (newName: string) => {
+    setAppName(newName);
+    setShowUpdateAppName(false);
+    // Store in localStorage for persistence
+    localStorage.setItem('buki_app_name', newName);
+  };
+
   const formatCurrency = (amount: number) => {
     return `₪${amount.toFixed(2)}`;
   };
@@ -373,7 +481,7 @@ export default function Home() {
               </button>
             )}
             <div className="text-3xl">🐷</div>
-            <h1 className="text-xl font-bold text-slate-900">ארנק בוקי</h1>
+            <h1 className="text-xl font-bold text-slate-900">{appName}</h1>
           </div>
           <div className="flex items-center gap-2">
             {isParentMode && currentParentType && (
@@ -417,9 +525,14 @@ export default function Home() {
           parentName={PARENT_DATA[currentParentType].name}
           parentEmoji={PARENT_DATA[currentParentType].emoji}
           onChangePIN={() => alert("ממוש קרוב...")}
-          onUpdateEmail={() => alert("ממוש קרוב...")}
+          onUpdateEmail={() => {
+            setShowSideMenu(false);
+            setShowUpdateEmail(true);
+          }}
           onResetData={handleResetData}
           onLogout={handleLogout}
+          onEditAppName={() => setShowUpdateAppName(true)}
+          appName={appName}
         />
       )}
 
@@ -466,16 +579,28 @@ export default function Home() {
                           </span>
                         </div>
                         {isParentMode && (
-                          <button
-                            onClick={handleRefreshBalance}
-                            className={`text-white hover:text-white/80 transition-transform text-lg w-8 h-8 flex items-center justify-center bg-white/20 rounded-full ${
-                              isRefreshing ? "animate-spin" : ""
-                            }`}
-                            title="רענן חישוב"
-                            disabled={isRefreshing}
-                          >
-                            ⟳
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedChildForSettings(child.id);
+                                setShowChildSettings(true);
+                              }}
+                              className="text-white hover:text-white/80 transition-transform text-lg w-8 h-8 flex items-center justify-center bg-white/20 rounded-full hover:bg-white/30"
+                              title="הגדרות ילד"
+                            >
+                              <FontAwesomeIcon icon={faGear} className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={handleRefreshBalance}
+                              className={`text-white hover:text-white/80 transition-transform text-lg w-8 h-8 flex items-center justify-center bg-white/20 rounded-full ${
+                                isRefreshing ? "animate-spin" : ""
+                              }`}
+                              title="רענן חישוב"
+                              disabled={isRefreshing}
+                            >
+                              <FontAwesomeIcon icon={faRotate} className="w-4 h-4" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}
@@ -838,6 +963,44 @@ export default function Home() {
           currentParentId={currentParentType}
         />
       )}
+
+      {/* Child Settings Modal */}
+      {showChildSettings && selectedChildForSettings && (() => {
+        const child = children.find(c => c.id === selectedChildForSettings);
+        if (!child) return null;
+        return (
+          <ChildSettingsModal
+            isOpen={showChildSettings}
+            childId={child.id}
+            childName={child.name}
+            childColor={child.color}
+            onClose={() => {
+              setShowChildSettings(false);
+              setSelectedChildForSettings(null);
+            }}
+            onSave={handleSaveChildSettings}
+          />
+        );
+      })()}
+
+      {/* Update Email Modal */}
+      {currentParentType && (
+        <UpdateEmailModal
+          isOpen={showUpdateEmail}
+          currentEmail={currentEmail}
+          userId={currentParentType}
+          onClose={() => setShowUpdateEmail(false)}
+          onSave={handleUpdateEmail}
+        />
+      )}
+
+      {/* Update App Name Modal */}
+      <UpdateAppNameModal
+        isOpen={showUpdateAppName}
+        currentName={appName}
+        onClose={() => setShowUpdateAppName(false)}
+        onSave={handleUpdateAppName}
+      />
     </div>
   );
 }

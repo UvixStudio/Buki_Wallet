@@ -1,5 +1,16 @@
 "use client";
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faKey,
+  faEnvelope,
+  faTrashCan,
+  faRightFromBracket,
+  faTimes,
+  faWallet,
+  faPencil,
+} from '@fortawesome/free-solid-svg-icons';
+
 interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
@@ -9,6 +20,8 @@ interface SideMenuProps {
   onUpdateEmail: () => void;
   onResetData: () => void;
   onLogout: () => void;
+  onEditAppName: () => void;
+  appName?: string;
 }
 
 export default function SideMenu({
@@ -20,6 +33,8 @@ export default function SideMenu({
   onUpdateEmail,
   onResetData,
   onLogout,
+  onEditAppName,
+  appName = "ארנק בוקי",
 }: SideMenuProps) {
   if (!isOpen) return null;
 
@@ -34,15 +49,36 @@ export default function SideMenu({
       {/* Menu */}
       <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform">
         <div className="flex flex-col h-full">
-          {/* Header */}
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 left-4 text-slate-600 hover:text-slate-900 z-10"
+          >
+            <FontAwesomeIcon icon={faTimes} className="w-6 h-6" />
+          </button>
+
+          {/* App Header Strip */}
+          <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FontAwesomeIcon icon={faWallet} className="w-6 h-6 text-white" />
+                <span className="text-xl font-bold text-white">{appName}</span>
+              </div>
+              <button
+                onClick={() => {
+                  onClose();
+                  onEditAppName();
+                }}
+                className="text-white/80 hover:text-white transition-colors"
+              >
+                <FontAwesomeIcon icon={faPencil} className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* User Profile Header */}
           <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50">
-            <button
-              onClick={onClose}
-              className="absolute top-4 left-4 text-slate-600 hover:text-slate-900 text-2xl"
-            >
-              ×
-            </button>
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-3">
               <span className="text-4xl">{parentEmoji}</span>
               <div>
                 <p className="text-xl font-bold text-slate-900">{parentName}</p>
@@ -58,7 +94,7 @@ export default function SideMenu({
                 onClick={onChangePIN}
                 className="w-full px-6 py-4 flex items-center gap-4 text-slate-700 hover:bg-gray-50 transition-colors text-right"
               >
-                <span className="text-2xl">🔐</span>
+                <FontAwesomeIcon icon={faKey} className="w-5 h-5 text-slate-600" />
                 <span className="text-base font-medium">שינוי קוד</span>
               </button>
 
@@ -66,7 +102,7 @@ export default function SideMenu({
                 onClick={onUpdateEmail}
                 className="w-full px-6 py-4 flex items-center gap-4 text-slate-700 hover:bg-gray-50 transition-colors text-right"
               >
-                <span className="text-2xl">📧</span>
+                <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5 text-slate-600" />
                 <span className="text-base font-medium">עדכון מייל שחזור</span>
               </button>
 
@@ -74,7 +110,7 @@ export default function SideMenu({
                 onClick={onResetData}
                 className="w-full px-6 py-4 flex items-center gap-4 text-red-600 hover:bg-red-50 transition-colors text-right"
               >
-                <span className="text-2xl">🗑️</span>
+                <FontAwesomeIcon icon={faTrashCan} className="w-5 h-5 text-red-600" />
                 <span className="text-base font-medium">איפוס נתונים</span>
               </button>
 
@@ -84,7 +120,7 @@ export default function SideMenu({
                 onClick={onLogout}
                 className="w-full px-6 py-4 flex items-center gap-4 text-slate-700 hover:bg-gray-50 transition-colors text-right"
               >
-                <span className="text-2xl">🚪</span>
+                <FontAwesomeIcon icon={faRightFromBracket} className="w-5 h-5 text-slate-600" />
                 <span className="text-base font-medium">יציאה</span>
               </button>
             </nav>
