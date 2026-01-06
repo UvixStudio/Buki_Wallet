@@ -42,7 +42,7 @@ export default function SetupPINScreen({
     setStep("pin2");
   };
 
-  const handlePin2Submit = () => {
+  const handlePin2Submit = async () => {
     if (pin2.length !== 4) {
       setError("קוד חייב להיות 4 ספרות");
       return;
@@ -58,7 +58,7 @@ export default function SetupPINScreen({
 
     // If not main admin, create user immediately
     if (!isMainAdmin) {
-      createUser(parentId, pin1, false);
+      await createUser(parentId, pin1, false);
       onSuccess();
       return;
     }
@@ -73,7 +73,7 @@ export default function SetupPINScreen({
     setError("");
   };
 
-  const handleVerifySubmit = () => {
+  const handleVerifySubmit = async () => {
     if (!selectedHint) {
       setError("בחר אפשרות אימות");
       return;
@@ -97,7 +97,7 @@ export default function SetupPINScreen({
     }
 
     // Setup recovery hints in storage with hardcoded values
-    setupRecoveryHints(
+    await setupRecoveryHints(
       "Gmail PIN",
       GMAIL_PIN,
       "ID",
@@ -105,7 +105,7 @@ export default function SetupPINScreen({
     );
 
     // Create main admin user
-    createUser(parentId, pin1, true);
+    await createUser(parentId, pin1, true);
     onSuccess();
   };
 

@@ -20,7 +20,7 @@ const PARENT_DATA = {
 };
 
 export default function Home() {
-  const { children, getBalance, addTransaction, updateTransaction, deleteTransaction, resetTransactionsOnly, currentParent, setCurrentParent } = useWallet();
+  const { children, getBalance, addTransaction, updateTransaction, deleteTransaction, currentParent, setCurrentParent, isLoading, isSyncing, resetAllData } = useWallet();
   
   // Auth state
   const [authState, setAuthState] = useState<AuthState>("welcome");
@@ -73,9 +73,10 @@ export default function Home() {
     saveAuthState("child");
   };
 
-  const handleSelectParent = () => {
+  const handleSelectParent = async () => {
     // Check if this is first-time setup
-    if (isFirstTimeSetup()) {
+    const firstTime = await isFirstTimeSetup();
+    if (firstTime) {
       // Yuval is always the first (main admin)
       setSetupParentId("yuval");
       setAuthState("setup");
@@ -92,11 +93,13 @@ export default function Home() {
     saveAuthState("parent", parent);
   };
 
-  const handleNeedSetup = (parent: ParentType) => {
+  const handleNeedSetup = async (parent: ParentType) => {
     // Check if this user needs setup
-    if (!userExists(parent)) {
+    const exists = await userExists(parent);
+    if (!exists) {
       // Main admin is only yuval if no users exist yet, OR yuval if he doesn't exist
-      const isMainAdmin = parent === "yuval" && isFirstTimeSetup();
+      const firstTime = await isFirstTimeSetup();
+      const isMainAdmin = parent === "yuval" && firstTime;
       setSetupParentId(parent);
       setAuthState("setup");
     }
@@ -120,12 +123,21 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    // Close any open modals first
+    setShowSideMenu(false);
+    setShowAddModal(false);
+    setShowEditModal(false);
+    setShowResetModal(false);
+    
+    // Reset all state
     setAuthState("welcome");
     setCurrentParentType(null);
     setCurrentParent(null);
     setIsParentMode(false);
+    setExpandedChild(null);
+    
+    // Clear localStorage
     localStorage.removeItem("buki_auth_state");
-    setShowSideMenu(false);
   };
 
   const handleAddTransaction = (e: React.FormEvent) => {
@@ -232,14 +244,19 @@ export default function Home() {
     setSelectedTransaction(null);
   };
 
-  const handleRefreshBalance = () => {
+  const handleRefreshBalance = async () => {
     setIsRefreshing(true);
-    setRefreshKey(prev => prev + 1);
-    
-    // Stop animation after 800ms
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 800);
+    try {
+      const response = await fetch('/api/wallet');
+      const result = await response.json();
+      if (result.success) {
+        setRefreshKey(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 800);
+    }
   };
 
   const handleExportExcel = () => {
@@ -250,8 +267,8 @@ export default function Home() {
     setShowResetModal(true);
   };
 
-  const handleConfirmReset = () => {
-    resetTransactionsOnly();
+  const handleConfirmReset = async () => {
+    await resetAllData();
     setShowResetModal(false);
     alert("✅ המערכת אופסה בהצלחה!");
   };
@@ -299,8 +316,7 @@ export default function Home() {
   }
 
   if (authState === "setup" && setupParentId) {
-    // Main admin = yuval AND first time (no other users exist)
-    const isMainAdmin = setupParentId === "yuval" && isFirstTimeSetup();
+    const isMainAdmin = setupParentId === "yuval";
     return (
       <SetupPINScreen
         parentId={setupParentId}
@@ -376,6 +392,18 @@ export default function Home() {
                   <span className="text-sm font-medium text-slate-700">{PARENT_DATA[currentParentType].name}</span>
                 </div>
               </>
+            )}
+            {/* Emergency logout button - always visible in child or parent mode */}
+            {(authState === "child" || authState === "parent") && (
+              <button
+                onClick={handleLogout}
+                className="w-9 h-9 flex items-center justify-center bg-red-50 rounded-full hover:bg-red-100 transition-colors"
+                title="חזרה למסך הבית"
+              >
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
             )}
           </div>
         </div>

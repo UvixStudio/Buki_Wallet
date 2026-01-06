@@ -33,15 +33,13 @@ interface WalletContextType {
   setInitialBalance: (childId: string, balance: number) => void;
   getBalance: (childId: string) => number;
   resetAllData: () => void;
-  resetTransactionsOnly: () => void;
   currentParent: "yuval" | "einav" | "guest" | null;
   setCurrentParent: (parent: "yuval" | "einav" | "guest" | null) => void;
+  isLoading: boolean;
+  isSyncing: boolean;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
-
-// LocalStorage keys
-const STORAGE_KEY = "buki_wallet_data";
 
 // Default children data
 const defaultChildren: Child[] = [
@@ -64,27 +62,32 @@ const defaultChildren: Child[] = [
 export function WalletProvider({ children: childrenProp }: { children: ReactNode }) {
   const [children, setChildren] = useState<Child[]>(defaultChildren);
   const [currentParent, setCurrentParent] = useState<"yuval" | "einav" | "guest" | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Load data from LocalStorage on mount
+  // Fetch data from database on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    async function fetchData() {
+      setIsLoading(true);
       try {
-        const data = JSON.parse(stored);
-        setChildren(data);
+        const response = await fetch('/api/wallet');
+        const result = await response.json();
+        if (result.success) {
+          setChildren(result.data);
+        } else {
+          console.error('Failed to fetch data:', result.error);
+        }
       } catch (error) {
-        console.error("Failed to load data from LocalStorage:", error);
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
       }
     }
+    fetchData();
   }, []);
 
-  // Save data to LocalStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(children));
-  }, [children]);
-
   // Add new transaction
-  const addTransaction = (
+  const addTransaction = async (
     childId: string,
     transaction: Omit<Transaction, "id" | "childId" | "timestamp">
   ) => {
@@ -96,6 +99,7 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
       createdBy: currentParent || "guest",
     };
 
+    // Optimistic update
     setChildren((prev) =>
       prev.map((child) =>
         child.id === childId
@@ -108,44 +112,118 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
           : child
       )
     );
+
+    // Sync with database
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addTransaction', transaction: newTransaction }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setChildren(result.data);
+      }
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Update existing transaction
-  const updateTransaction = (transactionId: string, updates: Partial<Transaction>) => {
+  const updateTransaction = async (transactionId: string, updates: Partial<Transaction>) => {
+    const modifiedUpdates = {
+      ...updates,
+      lastModifiedBy: (currentParent === "guest" ? undefined : currentParent) as "yuval" | "einav" | undefined,
+      lastModifiedAt: new Date().toISOString(),
+    };
+
+    // Optimistic update
     setChildren((prev) =>
       prev.map((child) => ({
         ...child,
         transactions: child.transactions.map((tx) =>
-          tx.id === transactionId 
-            ? { 
-                ...tx, 
-                ...updates,
-                lastModifiedBy: (currentParent === "guest" ? undefined : currentParent) as "yuval" | "einav" | undefined,
-                lastModifiedAt: new Date().toISOString(),
-              } 
-            : tx
+          tx.id === transactionId ? { ...tx, ...modifiedUpdates } : tx
         ),
       }))
     );
+
+    // Sync with database
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateTransaction', transactionId, updates: modifiedUpdates }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setChildren(result.data);
+      }
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Delete transaction
-  const deleteTransaction = (transactionId: string) => {
+  const deleteTransaction = async (transactionId: string) => {
+    // Optimistic update
     setChildren((prev) =>
       prev.map((child) => ({
         ...child,
         transactions: child.transactions.filter((tx) => tx.id !== transactionId),
       }))
     );
+
+    // Sync with database
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'deleteTransaction', transactionId }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setChildren(result.data);
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Set initial balance for a child
-  const setInitialBalance = (childId: string, balance: number) => {
+  const setInitialBalance = async (childId: string, balance: number) => {
+    // Optimistic update
     setChildren((prev) =>
       prev.map((child) =>
         child.id === childId ? { ...child, initialBalance: balance } : child
       )
     );
+
+    // Sync with database
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateInitialBalance', childId, balance }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setChildren(result.data);
+      }
+    } catch (error) {
+      console.error('Error updating initial balance:', error);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Calculate current balance
@@ -161,23 +239,26 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
   };
 
   // Reset all data to default
-  const resetAllData = () => {
+  const resetAllData = async () => {
     const confirmed = window.confirm("האם אתה בטוח שברצונך לאפס את כל הנתונים?");
     if (!confirmed) return;
-    
-    setChildren(defaultChildren);
-    localStorage.removeItem(STORAGE_KEY);
-  };
 
-  // Reset only transactions (keep PIN and auth data)
-  const resetTransactionsOnly = () => {
-    setChildren((prev) =>
-      prev.map((child) => ({
-        ...child,
-        initialBalance: 0,
-        transactions: [],
-      }))
-    );
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resetAllData' }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setChildren(result.data);
+      }
+    } catch (error) {
+      console.error('Error resetting data:', error);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
@@ -190,9 +271,10 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
         setInitialBalance,
         getBalance,
         resetAllData,
-        resetTransactionsOnly,
         currentParent,
         setCurrentParent,
+        isLoading,
+        isSyncing,
       }}
     >
       {childrenProp}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { verifySingleHint, getRecoveryHints, resetUserPIN } from "../services/authService";
 
 interface RecoveryScreenProps {
@@ -16,13 +16,22 @@ export default function RecoveryScreen({
   onSuccess,
   onBack,
 }: RecoveryScreenProps) {
-  const hints = getRecoveryHints();
+  const [hints, setHints] = useState<{ hint1: string; hint2: string } | null>(null);
   const [selectedHint, setSelectedHint] = useState<"hint1" | "hint2" | null>(null);
   const [answer, setAnswer] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [step, setStep] = useState<"select" | "verify" | "newpin">("select");
   const [error, setError] = useState("");
+
+  // Load hints on mount
+  useEffect(() => {
+    const loadHints = async () => {
+      const recoveryHints = await getRecoveryHints();
+      setHints(recoveryHints);
+    };
+    loadHints();
+  }, []);
 
   // If no hints available (not main admin and trying to recover)
   if (!hints) {
@@ -59,13 +68,13 @@ export default function RecoveryScreen({
     setStep("verify");
   };
 
-  const handleVerifyHint = () => {
+  const handleVerifyHint = async () => {
     if (!selectedHint || !answer.trim()) {
       setError("הזן תשובה");
       return;
     }
 
-    const verified = verifySingleHint(selectedHint, answer);
+    const verified = await verifySingleHint(selectedHint, answer);
     
     if (!verified) {
       setError("תשובה שגויה. נסה שוב");
@@ -77,7 +86,7 @@ export default function RecoveryScreen({
     setStep("newpin");
   };
 
-  const handleSetNewPin = () => {
+  const handleSetNewPin = async () => {
     if (newPin.length !== 4) {
       setError("נא להזין 4 ספרות");
       return;
@@ -89,7 +98,7 @@ export default function RecoveryScreen({
       return;
     }
 
-    resetUserPIN(userId, newPin);
+    await resetUserPIN(userId, newPin);
     onSuccess();
   };
 

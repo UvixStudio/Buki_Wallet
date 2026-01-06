@@ -38,15 +38,17 @@ export default function PINScreen({ onSuccess, onBack, onNeedSetup, onForgotPIN 
     setError("");
   };
 
-  const verifyPin = (pinToVerify: string, parent: "yuval" | "einav") => {
+  const verifyPin = async (pinToVerify: string, parent: "yuval" | "einav") => {
     // Check if user exists - if not, redirect to setup
-    if (!userExists(parent)) {
+    const exists = await userExists(parent);
+    if (!exists) {
       onNeedSetup(parent);
       return;
     }
 
     // Verify PIN
-    if (verifyPIN(parent, pinToVerify)) {
+    const verified = await verifyPIN(parent, pinToVerify);
+    if (verified) {
       onSuccess(parent);
     } else {
       setError("קוד שגוי");

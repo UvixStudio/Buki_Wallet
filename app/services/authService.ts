@@ -1,6 +1,7 @@
 /**
  * Authentication Service
  * Handles PIN management, recovery hints, and user authentication
+ * Now uses Postgres Database for centralized data storage
  */
 
 // Simple hash function (for demo - in production use bcrypt or similar)
@@ -14,218 +15,180 @@ const simpleHash = (text: string): string => {
   return Math.abs(hash).toString(36);
 };
 
-export interface RecoveryHint {
-  question: string;
-  answer: string; // hashed
-}
-
-export interface UserAuth {
-  pin: string; // hashed
-  isMainAdmin: boolean;
-  canResetOthers: boolean;
-  canChangeHints: boolean;
-  createdAt: string;
-}
-
-export interface AuthData {
-  recoveryHints?: {
-    hint1: RecoveryHint;
-    hint2: RecoveryHint;
-  };
-  users: {
-    yuval?: UserAuth;
-    einav?: UserAuth;
-  };
-}
-
-const AUTH_STORAGE_KEY = 'buki_auth';
-
-/**
- * Get auth data from LocalStorage
- */
-export const getAuthData = (): AuthData | null => {
-  const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!stored) return null;
-
-  try {
-    return JSON.parse(stored) as AuthData;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Save auth data to LocalStorage
- */
-export const saveAuthData = (data: AuthData): void => {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data));
-};
-
 /**
  * Check if a user exists
  */
-export const userExists = (userId: 'yuval' | 'einav'): boolean => {
-  const data = getAuthData();
-  return !!(data?.users[userId]);
+export const userExists = async (userId: 'yuval' | 'einav'): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'userExists', userId }),
+    });
+    const result = await response.json();
+    return result.exists || false;
+  } catch (error) {
+    console.error('Error checking user existence:', error);
+    return false;
+  }
 };
 
 /**
  * Check if this is first time setup (no users at all)
  */
-export const isFirstTimeSetup = (): boolean => {
-  const data = getAuthData();
-  return !data || (!data.users.yuval && !data.users.einav);
+export const isFirstTimeSetup = async (): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'isFirstTimeSetup' }),
+    });
+    const result = await response.json();
+    return result.isFirstTime || false;
+  } catch (error) {
+    console.error('Error checking first time setup:', error);
+    return true; // Assume first time on error
+  }
 };
 
 /**
- * Check if user is main admin
+ * Create a new user with PIN and recovery info
  */
-export const isMainAdmin = (userId: 'yuval' | 'einav'): boolean => {
-  const data = getAuthData();
-  return data?.users[userId]?.isMainAdmin || false;
-};
-
-/**
- * Setup recovery hints (main admin only)
- */
-export const setupRecoveryHints = (
-  hint1Question: string,
-  hint1Answer: string,
-  hint2Question: string,
-  hint2Answer: string
-): void => {
-  const data = getAuthData() || { users: {} };
-  
-  data.recoveryHints = {
-    hint1: {
-      question: hint1Question,
-      answer: simpleHash(hint1Answer.toLowerCase().trim()),
-    },
-    hint2: {
-      question: hint2Question,
-      answer: simpleHash(hint2Answer.toLowerCase().trim()),
-    },
-  };
-
-  saveAuthData(data);
-};
-
-/**
- * Create a new user with PIN
- */
-export const createUser = (
+export const createUser = async (
   userId: 'yuval' | 'einav',
   pin: string,
+  recoveryHint: string,
+  recoveryId: string,
   isMainAdmin: boolean = false
-): void => {
-  const data = getAuthData() || { users: {} };
+): Promise<void> => {
+  const pinHash = simpleHash(pin);
   
-  data.users[userId] = {
-    pin: simpleHash(pin),
-    isMainAdmin,
-    canResetOthers: isMainAdmin,
-    canChangeHints: isMainAdmin,
-    createdAt: new Date().toISOString(),
-  };
-
-  saveAuthData(data);
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'createUser',
+        userId,
+        pinHash,
+        recoveryHint,
+        recoveryId,
+        isMainAdmin,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create user');
+    }
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
 };
 
 /**
  * Verify PIN for a user
  */
-export const verifyPIN = (userId: 'yuval' | 'einav', pin: string): boolean => {
-  const data = getAuthData();
-  if (!data) return false;
-
-  const user = data.users[userId];
-  if (!user) return false;
-
-  return user.pin === simpleHash(pin);
+export const verifyPIN = async (userId: 'yuval' | 'einav', pin: string): Promise<boolean> => {
+  const pinHash = simpleHash(pin);
+  
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verifyPIN', userId, pinHash }),
+    });
+    const result = await response.json();
+    return result.valid || false;
+  } catch (error) {
+    console.error('Error verifying PIN:', error);
+    return false;
+  }
 };
 
 /**
- * Verify recovery hints (both required - legacy, kept for compatibility)
+ * Get recovery hint for a user
  */
-export const verifyRecoveryHints = (
-  answer1: string,
-  answer2: string
-): boolean => {
-  const data = getAuthData();
-  if (!data?.recoveryHints) return false;
-
-  const hash1 = simpleHash(answer1.toLowerCase().trim());
-  const hash2 = simpleHash(answer2.toLowerCase().trim());
-
-  return (
-    data.recoveryHints.hint1.answer === hash1 &&
-    data.recoveryHints.hint2.answer === hash2
-  );
+export const getRecoveryHint = async (userId: 'yuval' | 'einav'): Promise<string | null> => {
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getRecoveryHint', userId }),
+    });
+    const result = await response.json();
+    return result.hint || null;
+  } catch (error) {
+    console.error('Error getting recovery hint:', error);
+    return null;
+  }
 };
 
 /**
- * Verify a single recovery hint by ID (hint1 or hint2)
- * Either hint is sufficient for recovery
+ * Verify recovery info (hint + ID)
  */
-export const verifySingleHint = (
-  hintId: 'hint1' | 'hint2',
-  answer: string
-): boolean => {
-  const data = getAuthData();
-  if (!data?.recoveryHints) return false;
-
-  const hash = simpleHash(answer.toLowerCase().trim());
-  return data.recoveryHints[hintId].answer === hash;
+export const verifyRecovery = async (
+  userId: 'yuval' | 'einav',
+  recoveryId: string
+): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verifyRecovery', userId, recoveryId }),
+    });
+    const result = await response.json();
+    return result.valid || false;
+  } catch (error) {
+    console.error('Error verifying recovery:', error);
+    return false;
+  }
 };
 
 /**
- * Get recovery hint questions
+ * Reset user PIN (after recovery verification)
  */
-export const getRecoveryHints = (): { hint1: string; hint2: string } | null => {
-  const data = getAuthData();
-  if (!data?.recoveryHints) return null;
-
-  return {
-    hint1: data.recoveryHints.hint1.question,
-    hint2: data.recoveryHints.hint2.question,
-  };
+export const resetUserPIN = async (userId: 'yuval' | 'einav', newPin: string): Promise<boolean> => {
+  const pinHash = simpleHash(newPin);
+  
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'resetPIN', userId, pinHash }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error resetting PIN:', error);
+    return false;
+  }
 };
 
 /**
- * Reset user PIN (after hint verification or by main admin)
+ * Update recovery info for a user
  */
-export const resetUserPIN = (userId: 'yuval' | 'einav', newPin: string): boolean => {
-  const data = getAuthData();
-  if (!data?.users[userId]) return false;
-
-  data.users[userId]!.pin = simpleHash(newPin);
-  saveAuthData(data);
-  return true;
-};
-
-/**
- * Update recovery hints (main admin only)
- */
-export const updateRecoveryHints = (
-  hint1Question: string,
-  hint1Answer: string,
-  hint2Question: string,
-  hint2Answer: string
-): void => {
-  setupRecoveryHints(hint1Question, hint1Answer, hint2Question, hint2Answer);
-};
-
-/**
- * Clear all auth data (nuclear option)
- */
-export const clearAllAuthData = (): void => {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-};
-
-/**
- * Export auth data for backup
- */
-export const exportAuthData = (): string => {
-  const data = getAuthData();
-  return JSON.stringify(data, null, 2);
+export const updateRecoveryInfo = async (
+  userId: 'yuval' | 'einav',
+  recoveryHint: string,
+  recoveryId: string
+): Promise<void> => {
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'updateRecovery',
+        userId,
+        recoveryHint,
+        recoveryId,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update recovery info');
+    }
+  } catch (error) {
+    console.error('Error updating recovery info:', error);
+    throw error;
+  }
 };
