@@ -78,7 +78,7 @@ export default function ChildSettingsModal({
 
       {/* Modal */}
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl max-w-md w-full z-50 overflow-hidden"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 z-50 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with child's color */}
@@ -116,7 +116,7 @@ export default function ChildSettingsModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-4">
           {/* Color Picker - Always Visible */}
           <div className="flex flex-col items-center">
             <SketchPicker
@@ -124,7 +124,31 @@ export default function ChildSettingsModal({
               onChange={(newColor) => setColor(newColor.hex)}
               presetColors={PRESET_COLORS}
               disableAlpha
-              width="280px"
+              width="100%"
+              styles={{
+                default: {
+                  picker: {
+                    width: '100%',
+                    boxShadow: 'none',
+                  },
+                  saturation: {
+                    borderRadius: '8px',
+                    height: '180px',
+                  },
+                  controls: {
+                    padding: '16px 0',
+                  },
+                  color: {
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '8px',
+                  },
+                  hue: {
+                    height: '16px',
+                    borderRadius: '8px',
+                  },
+                },
+              }}
             />
           </div>
         </div>

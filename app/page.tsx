@@ -14,7 +14,7 @@ import UpdateAppNameModal from "./components/UpdateAppNameModal";
 import { isFirstTimeSetup, userExists } from "./services/authService";
 import { exportToExcel } from "./services/excelService";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRotate, faGear, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faRotate, faGear, faPlus, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 type AuthState = "welcome" | "pin" | "setup" | "recovery" | "child" | "parent";
 type ParentType = "yuval" | "einav";
@@ -334,6 +334,8 @@ export default function Home() {
 
       const result = await response.json();
       if (result.success) {
+        // Force refresh to get updated data
+        await fetch('/api/wallet').then(res => res.json());
         setRefreshKey(prev => prev + 1);
         setShowChildSettings(false);
         setSelectedChildForSettings(null);
@@ -473,11 +475,11 @@ export default function Home() {
           <div className="flex items-center gap-3">
             {isParentMode && (
               <button
-                onClick={() => setShowSideMenu(true)}
-                className="text-2xl text-slate-700 hover:text-slate-900 transition-colors"
+                onClick={() => setShowSideMenu(!showSideMenu)}
+                className="w-9 h-9 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors"
                 title="תפריט"
               >
-                ☰
+                <FontAwesomeIcon icon={showSideMenu ? faTimes : faBars} className="w-5 h-5" />
               </button>
             )}
             <div className="text-3xl">🐷</div>
@@ -495,10 +497,6 @@ export default function Home() {
                     <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </button>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full">
-                  <span className="text-xl">{PARENT_DATA[currentParentType].emoji}</span>
-                  <span className="text-sm font-medium text-slate-700">{PARENT_DATA[currentParentType].name}</span>
-                </div>
               </>
             )}
             {/* Emergency logout button - always visible in child or parent mode */}

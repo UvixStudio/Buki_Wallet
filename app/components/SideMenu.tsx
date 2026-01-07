@@ -62,51 +62,43 @@ export default function SideMenu({
         <div className="flex flex-col h-full">
           {/* App Header Strip - White */}
           <div className="px-6 py-4 border-b border-gray-200 bg-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
-                <span className="text-3xl">🐷</span>
-                {isEditingAppName ? (
-                  <input
-                    type="text"
-                    value={editedAppName}
-                    onChange={(e) => setEditedAppName(e.target.value)}
-                    onBlur={handleSaveAppName}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveAppName();
-                      if (e.key === 'Escape') {
-                        setEditedAppName(appName);
-                        setIsEditingAppName(false);
-                      }
-                    }}
-                    className="flex-1 text-xl font-bold text-slate-900 px-2 py-1 border-2 border-blue-500 rounded focus:outline-none"
-                    autoFocus
-                    maxLength={30}
-                  />
-                ) : (
-                  <span
-                    onClick={() => setIsEditingAppName(true)}
-                    className="text-xl font-bold text-slate-900 cursor-pointer hover:text-blue-900 transition-colors"
-                  >
-                    {appName}
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={onClose}
-                className="text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
-              </button>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🐷</span>
+              {isEditingAppName ? (
+                <input
+                  type="text"
+                  value={editedAppName}
+                  onChange={(e) => setEditedAppName(e.target.value)}
+                  onBlur={handleSaveAppName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveAppName();
+                    if (e.key === 'Escape') {
+                      setEditedAppName(appName);
+                      setIsEditingAppName(false);
+                    }
+                  }}
+                  className="flex-1 max-w-[180px] text-xl font-bold text-slate-900 px-2 py-1 border-2 border-blue-500 rounded focus:outline-none"
+                  autoFocus
+                  maxLength={30}
+                />
+              ) : (
+                <span
+                  onClick={() => setIsEditingAppName(true)}
+                  className="text-xl font-bold text-slate-900 cursor-pointer hover:text-blue-900 transition-colors"
+                >
+                  {appName}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* User Profile Header */}
-          <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50">
-            <div className="flex items-center gap-3">
-              <span className="text-4xl">{parentEmoji}</span>
+          {/* User Profile Header - Compact */}
+          <div className="px-6 py-3 border-b border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{parentEmoji}</span>
               <div>
-                <p className="text-xl font-bold text-slate-900">{parentName}</p>
-                <p className="text-sm text-slate-600">(אדמין)</p>
+                <p className="text-base font-bold text-slate-900">{parentName}</p>
+                <p className="text-xs text-slate-600">(אדמין)</p>
               </div>
             </div>
           </div>
