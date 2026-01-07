@@ -14,7 +14,7 @@ import UpdateAppNameModal from "./components/UpdateAppNameModal";
 import { isFirstTimeSetup, userExists } from "./services/authService";
 import { exportToExcel } from "./services/excelService";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRotate, faGear, faPlus, faBars, faTimes, faMobileAlt, faDesktop } from '@fortawesome/free-solid-svg-icons';
+import { faRotate, faGear, faPlus, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 type AuthState = "welcome" | "pin" | "setup" | "recovery" | "child" | "parent";
 type ParentType = "yuval" | "einav";
@@ -48,8 +48,6 @@ export default function Home() {
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
   const [showUpdateAppName, setShowUpdateAppName] = useState(false);
   const [appName, setAppName] = useState("ארנק בוקי");
-  const [isMobileView, setIsMobileView] = useState(true); // Default to mobile
-  const [isDesktop, setIsDesktop] = useState(false); // Track if device is desktop
 
   // Form state
   const [formType, setFormType] = useState<TransactionType>("income");
@@ -107,21 +105,6 @@ export default function Home() {
     if (savedName) {
       setAppName(savedName);
     }
-  }, []);
-
-  // Detect desktop and set initial view mode
-  useEffect(() => {
-    const checkIfDesktop = () => {
-      const isDesktopDevice = window.innerWidth >= 768; // 768px = tablet/desktop breakpoint
-      setIsDesktop(isDesktopDevice);
-      // ALWAYS default to mobile view (mobile preview)
-      // User can click button to expand to full desktop if needed
-      setIsMobileView(true);
-    };
-    
-    checkIfDesktop();
-    window.addEventListener('resize', checkIfDesktop);
-    return () => window.removeEventListener('resize', checkIfDesktop);
   }, []);
 
   // Save auth state
@@ -484,53 +467,10 @@ export default function Home() {
   }
 
   return (
-    <div className={`min-h-screen ${
-      isMobileView && isDesktop ? 'bg-slate-800' : 'bg-gray-100'
-    }`}>
-      {/* Mobile Device Frame - Only when in mobile preview on desktop */}
-      {isMobileView && isDesktop ? (
-        <div className="flex items-center justify-center min-h-screen p-8">
-          <div className="bg-gray-100 rounded-3xl shadow-2xl overflow-hidden" style={{
-            width: '390px',
-            height: '844px',
-            border: '12px solid #1e293b',
-          }}>
-            <div className="h-full overflow-hidden flex flex-col">
-              {/* Mobile Status Bar */}
-              <div className="bg-white h-11 flex items-center justify-between px-6 text-xs font-semibold text-slate-900">
-                <span>9:41</span>
-                <div className="flex items-center gap-1">
-                  <span>••••</span>
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                  </svg>
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              </div>
-              
-              {/* Mobile Content */}
-              <div className="flex-1 overflow-y-auto bg-gray-100">
-                {renderContent()}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        renderContent()
-      )}
-    </div>
-  );
-
-  function renderContent() {
-    return (
-      <>
+    <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className={`mx-auto px-4 py-4 flex items-center justify-between ${
-          isMobileView ? 'max-w-md' : 'max-w-7xl'
-        }`}>
+        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {isParentMode && (
               <button
@@ -547,19 +487,6 @@ export default function Home() {
           <div className="flex items-center gap-2">
             {isParentMode && currentParentType && (
               <>
-                {/* Responsive Toggle Button - Always show on desktop */}
-                {isDesktop && (
-                  <button
-                    onClick={() => setIsMobileView(!isMobileView)}
-                    className="w-9 h-9 flex items-center justify-center bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"
-                    title={isMobileView ? "הרחב לתצוגת דסקטופ מלאה" : "חזור לתצוגת מובייל"}
-                  >
-                    <FontAwesomeIcon 
-                      icon={isMobileView ? faDesktop : faMobileAlt} 
-                      className="w-4 h-4 text-slate-600" 
-                    />
-                  </button>
-                )}
                 <button
                   onClick={handleExportExcel}
                   className="w-9 h-9 flex items-center justify-center bg-blue-50 rounded-full hover:bg-blue-100 transition-colors"
@@ -607,14 +534,10 @@ export default function Home() {
       )}
 
       {/* Main Content */}
-      <main className={`mx-auto p-4 ${
-        isMobileView ? 'max-w-md' : 'max-w-7xl'
-      }`}>
+      <main className="max-w-md mx-auto p-4">
         <div
           className={`grid gap-4 transition-all duration-300 ${
-            isMobileView 
-              ? (expandedChild ? "grid-rows-[auto_1fr]" : "grid-rows-2")
-              : "grid-cols-2"
+            expandedChild ? "grid-rows-[auto_1fr]" : "grid-rows-2"
           }`}
         >
           {children.map((child) => {
@@ -627,9 +550,7 @@ export default function Home() {
               <div
                 key={child.id}
                 className={`bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ${
-                  isMobileView 
-                    ? (isCollapsed ? "h-16" : isExpanded ? "h-[calc(100vh-12rem)]" : "h-[calc(50vh-6rem)]")
-                    : "h-[calc(100vh-10rem)]" // Desktop: full height cards
+                  isCollapsed ? "h-16" : isExpanded ? "h-[calc(100vh-12rem)]" : "h-[calc(50vh-6rem)]"
                 }`}
               >
                 {/* Child Header - Compact Single Line */}
@@ -721,11 +642,9 @@ export default function Home() {
                 {!isCollapsed && (
                   <div
                     className={`divide-y divide-gray-100 ${
-                      isMobileView
-                        ? (isExpanded 
-                            ? "overflow-y-auto h-[calc(100vh-16rem)]" 
-                            : "overflow-y-auto h-[calc(50vh-9rem)]")
-                        : "overflow-y-auto h-[calc(100vh-14rem)]" // Desktop: taller list
+                      isExpanded 
+                        ? "overflow-y-auto h-[calc(100vh-16rem)]" 
+                        : "overflow-y-auto h-[calc(50vh-9rem)]"
                     }`}
                   >
                     {displayTransactions.map((transaction, index) => (
@@ -1080,7 +999,6 @@ export default function Home() {
         onClose={() => setShowUpdateAppName(false)}
         onSave={handleUpdateAppName}
       />
-      </>
-    );
-  }
+    </div>
+  );
 }
