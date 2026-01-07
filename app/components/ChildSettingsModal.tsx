@@ -49,7 +49,6 @@ export default function ChildSettingsModal({
   const [name, setName] = useState(childName);
   const [color, setColor] = useState(childColor);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
 
   if (!isOpen) return null;
 
@@ -66,7 +65,6 @@ export default function ChildSettingsModal({
     setName(childName);
     setColor(childColor);
     setIsEditingName(false);
-    setShowColorPicker(false);
     onClose();
   };
 
@@ -118,93 +116,31 @@ export default function ChildSettingsModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Current Color Display */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">
-              צבע נוכחי
-            </label>
-            <div className="flex items-center gap-3">
-              <div
-                className="w-16 h-16 rounded-lg border-2 border-gray-300 shadow-sm"
-                style={{ backgroundColor: color }}
-              />
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={color.toUpperCase()}
-                  onChange={(e) => {
-                    const hex = e.target.value;
-                    if (/^#[0-9A-F]{0,6}$/i.test(hex)) {
-                      setColor(hex);
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                  placeholder="#000000"
-                  maxLength={7}
-                  dir="ltr"
-                />
-              </div>
-            </div>
+        <div className="p-6 space-y-4">
+          {/* Color Picker - Always Visible */}
+          <div className="flex flex-col items-center">
+            <SketchPicker
+              color={color}
+              onChange={(newColor) => setColor(newColor.hex)}
+              presetColors={PRESET_COLORS}
+              disableAlpha
+              width="280px"
+            />
           </div>
-
-          {/* Preset Colors */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">
-              בחר צבע
-            </label>
-            <div className="grid grid-cols-10 gap-2">
-              {PRESET_COLORS.map((presetColor) => (
-                <button
-                  key={presetColor}
-                  onClick={() => setColor(presetColor)}
-                  className={`w-full aspect-square rounded-lg border-2 transition-all hover:scale-110 ${
-                    color.toUpperCase() === presetColor.toUpperCase()
-                      ? 'border-slate-900 ring-2 ring-blue-500 ring-offset-2'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                  style={{ backgroundColor: presetColor }}
-                  title={presetColor}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Color Picker Toggle */}
-          <div>
-            <button
-              onClick={() => setShowColorPicker(!showColorPicker)}
-              className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
-            >
-              {showColorPicker ? 'סגור בורר צבעים' : 'פתח בורר צבעים מתקדם'}
-            </button>
-          </div>
-
-          {/* Advanced Color Picker */}
-          {showColorPicker && (
-            <div className="flex justify-center">
-              <SketchPicker
-                color={color}
-                onChange={(newColor) => setColor(newColor.hex)}
-                presetColors={PRESET_COLORS}
-                disableAlpha
-              />
-            </div>
-          )}
         </div>
 
         {/* Footer Buttons */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
           <button
             onClick={handleCancel}
-            className="flex-1 px-6 py-3 border-2 border-gray-300 text-slate-700 rounded-full font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-6 py-3 border-2 border-blue-900 text-blue-900 bg-white rounded-full font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
           >
             <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
             ביטול
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+            className="flex-1 px-6 py-3 bg-blue-900 text-white rounded-full font-semibold hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
           >
             <FontAwesomeIcon icon={faCheck} className="w-4 h-4" />
             שמור

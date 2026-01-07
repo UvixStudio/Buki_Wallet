@@ -63,14 +63,14 @@ export default function UpdateAppNameModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-between">
+        <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <FontAwesomeIcon icon={faWallet} className="w-6 h-6 text-white" />
-            <h3 className="text-xl font-bold text-white">עריכת שם האפליקציה</h3>
+            <FontAwesomeIcon icon={faWallet} className="w-6 h-6 text-blue-900" />
+            <h3 className="text-xl font-bold text-slate-900">עריכת שם האפליקציה</h3>
           </div>
           <button
             onClick={handleCancel}
-            className="text-white hover:text-white/80 transition-colors"
+            className="text-slate-600 hover:text-slate-900 transition-colors"
           >
             <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
           </button>
@@ -128,14 +128,14 @@ export default function UpdateAppNameModal({
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
           <button
             onClick={handleCancel}
-            className="flex-1 px-6 py-3 border-2 border-gray-300 text-slate-700 rounded-full font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-6 py-3 border-2 border-blue-900 text-blue-900 bg-white rounded-full font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
           >
             <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
             ביטול
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+            className="flex-1 px-6 py-3 bg-blue-900 text-white rounded-full font-semibold hover:bg-blue-800 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2"
           >
             <FontAwesomeIcon icon={faCheck} className="w-4 h-4" />
             שמור

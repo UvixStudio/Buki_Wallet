@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faKey,
@@ -20,7 +21,7 @@ interface SideMenuProps {
   onUpdateEmail: () => void;
   onResetData: () => void;
   onLogout: () => void;
-  onEditAppName: () => void;
+  onEditAppName: (newName: string) => void;
   appName?: string;
 }
 
@@ -36,7 +37,17 @@ export default function SideMenu({
   onEditAppName,
   appName = "ארנק בוקי",
 }: SideMenuProps) {
+  const [isEditingAppName, setIsEditingAppName] = useState(false);
+  const [editedAppName, setEditedAppName] = useState(appName);
+
   if (!isOpen) return null;
+
+  const handleSaveAppName = () => {
+    if (editedAppName.trim() && editedAppName.trim() !== appName) {
+      onEditAppName(editedAppName.trim());
+    }
+    setIsEditingAppName(false);
+  };
 
   return (
     <>
@@ -47,31 +58,44 @@ export default function SideMenu({
       />
 
       {/* Menu */}
-      <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform">
+      <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform slide-in-right">
         <div className="flex flex-col h-full">
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 left-4 text-slate-600 hover:text-slate-900 z-10"
-          >
-            <FontAwesomeIcon icon={faTimes} className="w-6 h-6" />
-          </button>
-
-          {/* App Header Strip */}
-          <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600">
+          {/* App Header Strip - White */}
+          <div className="px-6 py-4 border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faWallet} className="w-6 h-6 text-white" />
-                <span className="text-xl font-bold text-white">{appName}</span>
+              <div className="flex items-center gap-3 flex-1">
+                <span className="text-3xl">🐷</span>
+                {isEditingAppName ? (
+                  <input
+                    type="text"
+                    value={editedAppName}
+                    onChange={(e) => setEditedAppName(e.target.value)}
+                    onBlur={handleSaveAppName}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveAppName();
+                      if (e.key === 'Escape') {
+                        setEditedAppName(appName);
+                        setIsEditingAppName(false);
+                      }
+                    }}
+                    className="flex-1 text-xl font-bold text-slate-900 px-2 py-1 border-2 border-blue-500 rounded focus:outline-none"
+                    autoFocus
+                    maxLength={30}
+                  />
+                ) : (
+                  <span
+                    onClick={() => setIsEditingAppName(true)}
+                    className="text-xl font-bold text-slate-900 cursor-pointer hover:text-blue-900 transition-colors"
+                  >
+                    {appName}
+                  </span>
+                )}
               </div>
               <button
-                onClick={() => {
-                  onClose();
-                  onEditAppName();
-                }}
-                className="text-white/80 hover:text-white transition-colors"
+                onClick={onClose}
+                className="text-slate-600 hover:text-slate-900 transition-colors"
               >
-                <FontAwesomeIcon icon={faPencil} className="w-4 h-4" />
+                <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
               </button>
             </div>
           </div>

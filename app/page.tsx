@@ -14,7 +14,7 @@ import UpdateAppNameModal from "./components/UpdateAppNameModal";
 import { isFirstTimeSetup, userExists } from "./services/authService";
 import { exportToExcel } from "./services/excelService";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRotate, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faRotate, faGear, faPlus } from '@fortawesome/free-solid-svg-icons';
 
 type AuthState = "welcome" | "pin" | "setup" | "recovery" | "child" | "parent";
 type ParentType = "yuval" | "einav";
@@ -531,7 +531,7 @@ export default function Home() {
           }}
           onResetData={handleResetData}
           onLogout={handleLogout}
-          onEditAppName={() => setShowUpdateAppName(true)}
+          onEditAppName={(newName) => handleUpdateAppName(newName)}
           appName={appName}
         />
       )}
@@ -613,9 +613,10 @@ export default function Home() {
                           setSelectedChildForAdd(child.id);
                           setShowAddModal(true);
                         }}
-                        className="px-3 py-1.5 bg-white text-slate-900 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                        title="הוסף רשומה"
                       >
-                        + הוסף
+                        <FontAwesomeIcon icon={faPlus} className="w-4 h-4" />
                       </button>
                     )}
                     {!isCollapsed && (
