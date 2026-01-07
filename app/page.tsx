@@ -48,6 +48,8 @@ export default function Home() {
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
   const [showUpdateAppName, setShowUpdateAppName] = useState(false);
   const [appName, setAppName] = useState("ארנק בוקי");
+  const [isMobileView, setIsMobileView] = useState(true); // Default to mobile
+  const [isDesktop, setIsDesktop] = useState(false); // Track if device is desktop
 
   // Form state
   const [formType, setFormType] = useState<TransactionType>("income");
@@ -105,6 +107,20 @@ export default function Home() {
     if (savedName) {
       setAppName(savedName);
     }
+  }, []);
+
+  // Detect desktop and set initial view mode
+  useEffect(() => {
+    const checkIfDesktop = () => {
+      const isDesktopDevice = window.innerWidth >= 768; // 768px = tablet/desktop breakpoint
+      setIsDesktop(isDesktopDevice);
+      // On desktop, default to mobile view for better UX
+      setIsMobileView(true);
+    };
+    
+    checkIfDesktop();
+    window.addEventListener('resize', checkIfDesktop);
+    return () => window.removeEventListener('resize', checkIfDesktop);
   }, []);
 
   // Save auth state
@@ -470,7 +486,9 @@ export default function Home() {
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
+        <div className={`mx-auto px-4 py-4 flex items-center justify-between ${
+          isMobileView ? 'max-w-md' : 'max-w-7xl'
+        }`}>
           <div className="flex items-center gap-3">
             {isParentMode && (
               <button
@@ -485,6 +503,16 @@ export default function Home() {
             <h1 className="text-xl font-bold text-slate-900">{appName}</h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Responsive Toggle Button - Only show on desktop */}
+            {isDesktop && (
+              <button
+                onClick={() => setIsMobileView(!isMobileView)}
+                className="w-9 h-9 flex items-center justify-center bg-purple-50 rounded-full hover:bg-purple-100 transition-colors"
+                title={isMobileView ? "מעבר לתצוגת דסקטופ" : "מעבר לתצוגת מובייל"}
+              >
+                <span className="text-lg">{isMobileView ? "💻" : "📱"}</span>
+              </button>
+            )}
             {isParentMode && currentParentType && (
               <>
                 <button
@@ -534,10 +562,14 @@ export default function Home() {
       )}
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto p-4">
+      <main className={`mx-auto p-4 ${
+        isMobileView ? 'max-w-md' : 'max-w-7xl'
+      }`}>
         <div
           className={`grid gap-4 transition-all duration-300 ${
-            expandedChild ? "grid-rows-[auto_1fr]" : "grid-rows-2"
+            isMobileView 
+              ? (expandedChild ? "grid-rows-[auto_1fr]" : "grid-rows-2")
+              : "grid-cols-2"
           }`}
         >
           {children.map((child) => {
@@ -550,7 +582,9 @@ export default function Home() {
               <div
                 key={child.id}
                 className={`bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ${
-                  isCollapsed ? "h-16" : isExpanded ? "h-[calc(100vh-12rem)]" : "h-[calc(50vh-6rem)]"
+                  isMobileView 
+                    ? (isCollapsed ? "h-16" : isExpanded ? "h-[calc(100vh-12rem)]" : "h-[calc(50vh-6rem)]")
+                    : "h-[calc(100vh-10rem)]" // Desktop: full height cards
                 }`}
               >
                 {/* Child Header - Compact Single Line */}
@@ -642,9 +676,11 @@ export default function Home() {
                 {!isCollapsed && (
                   <div
                     className={`divide-y divide-gray-100 ${
-                      isExpanded 
-                        ? "overflow-y-auto h-[calc(100vh-16rem)]" 
-                        : "overflow-y-auto h-[calc(50vh-9rem)]"
+                      isMobileView
+                        ? (isExpanded 
+                            ? "overflow-y-auto h-[calc(100vh-16rem)]" 
+                            : "overflow-y-auto h-[calc(50vh-9rem)]")
+                        : "overflow-y-auto h-[calc(100vh-14rem)]" // Desktop: taller list
                     }`}
                   >
                     {displayTransactions.map((transaction, index) => (
