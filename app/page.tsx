@@ -14,7 +14,7 @@ import UpdateAppNameModal from "./components/UpdateAppNameModal";
 import { isFirstTimeSetup, userExists } from "./services/authService";
 import { exportToExcel } from "./services/excelService";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRotate, faGear, faPlus, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faRotate, faGear, faPlus, faBars, faTimes, faMobileAlt, faDesktop } from '@fortawesome/free-solid-svg-icons';
 
 type AuthState = "welcome" | "pin" | "setup" | "recovery" | "child" | "parent";
 type ParentType = "yuval" | "einav";
@@ -114,7 +114,8 @@ export default function Home() {
     const checkIfDesktop = () => {
       const isDesktopDevice = window.innerWidth >= 768; // 768px = tablet/desktop breakpoint
       setIsDesktop(isDesktopDevice);
-      // On desktop, default to mobile view for better UX
+      // ALWAYS default to mobile view (mobile preview)
+      // User can click button to expand to full desktop if needed
       setIsMobileView(true);
     };
     
@@ -507,10 +508,13 @@ export default function Home() {
             {isDesktop && (
               <button
                 onClick={() => setIsMobileView(!isMobileView)}
-                className="w-9 h-9 flex items-center justify-center bg-purple-50 rounded-full hover:bg-purple-100 transition-colors"
-                title={isMobileView ? "מעבר לתצוגת דסקטופ" : "מעבר לתצוגת מובייל"}
+                className="w-9 h-9 flex items-center justify-center bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"
+                title={isMobileView ? "הרחב לתצוגת דסקטופ מלאה" : "חזור לתצוגת מובייל"}
               >
-                <span className="text-lg">{isMobileView ? "💻" : "📱"}</span>
+                <FontAwesomeIcon 
+                  icon={isMobileView ? faDesktop : faMobileAlt} 
+                  className="w-4 h-4 text-slate-600" 
+                />
               </button>
             )}
             {isParentMode && currentParentType && (
