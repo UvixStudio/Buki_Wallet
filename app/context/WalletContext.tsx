@@ -33,6 +33,7 @@ interface WalletContextType {
   setInitialBalance: (childId: string, balance: number) => void;
   getBalance: (childId: string) => number;
   resetAllData: () => void;
+  refreshData: () => Promise<void>;
   currentParent: "yuval" | "einav" | "guest" | null;
   setCurrentParent: (parent: "yuval" | "einav" | "guest" | null) => void;
   isLoading: boolean;
@@ -261,6 +262,22 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
     }
   };
 
+  // Refresh data from database
+  const refreshData = async () => {
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/wallet');
+      const result = await response.json();
+      if (result.success) {
+        setChildren(result.data);
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <WalletContext.Provider
       value={{
@@ -271,6 +288,7 @@ export function WalletProvider({ children: childrenProp }: { children: ReactNode
         setInitialBalance,
         getBalance,
         resetAllData,
+        refreshData,
         currentParent,
         setCurrentParent,
         isLoading,

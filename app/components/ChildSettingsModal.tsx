@@ -78,7 +78,7 @@ export default function ChildSettingsModal({
 
       {/* Modal */}
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 z-50 overflow-hidden"
+        className="fixed inset-4 m-auto bg-white rounded-2xl shadow-2xl w-full max-w-sm h-fit z-50 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with child's color */}

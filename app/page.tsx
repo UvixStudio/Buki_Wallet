@@ -25,7 +25,7 @@ const PARENT_DATA = {
 };
 
 export default function Home() {
-  const { children, getBalance, addTransaction, updateTransaction, deleteTransaction, currentParent, setCurrentParent, isLoading, isSyncing, resetAllData } = useWallet();
+  const { children, getBalance, addTransaction, updateTransaction, deleteTransaction, currentParent, setCurrentParent, isLoading, isSyncing, resetAllData, refreshData } = useWallet();
   
   // Auth state
   const [authState, setAuthState] = useState<AuthState>("welcome");
@@ -334,9 +334,8 @@ export default function Home() {
 
       const result = await response.json();
       if (result.success) {
-        // Force refresh to get updated data
-        await fetch('/api/wallet').then(res => res.json());
-        setRefreshKey(prev => prev + 1);
+        // Refresh data from database
+        await refreshData();
         setShowChildSettings(false);
         setSelectedChildForSettings(null);
       } else {
